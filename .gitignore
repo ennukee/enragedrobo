@@ -1,0 +1,9 @@
+discord.log
+data/admins.json
+data/apikeys.json
+data/login.json
+data/custom_commands/*
+data/league/champions/*
+data/league/champion.json
+data/league/na.json
+realms/na.json
