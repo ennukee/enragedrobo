@@ -1,23 +1,22 @@
 # - - External Libraries - - #
-from discord.ext import commands		# Command interface
-import discord							# Overall discord library
-import datetime, re 					# Datetime and regular expression libraries
-import json, asyncio					# json / asyncio libraries
+from discord.ext import commands # Command interface
+import discord	# Overall discord library
+import datetime, re # Datetime and regular expression libraries
+import json, asyncio # json / asyncio libraries
 import copy
-import logging 							# Debug logging
-import sys, os 							# Lower-level operations libraries
-import requests 						# API queries
+import logging # Debug logging
+import sys, os # Lower-level operations libraries
+import requests # API queries
 import textwrap 
-import urllib.request 					# Downloading
-import random							# Random (RNG)
-from time import sleep					# For delays
+import urllib.request # Downloading
+import random # Random (RNG)
+from time import sleep # For delays
 from collections import defaultdict 
-import numpy as np 						# Advanced number/set arithmetic
+import numpy as np # Advanced number/set arithmetic
 
 # - - My libraries - - #
-import checks 							# Ensures various predefined conditions are met
-from utils import imageloader 			# Image downloader
-from modules import trivia
+import checks # Ensures various predefined conditions are met
+from utils import imageloader # Image downloader
 
 # - - - - - - - - - - #
 # - - Setup stuff - - #

@@ -1,15 +1,14 @@
 # - - External Libraries - - #
-from discord.ext import commands		# Command interface
-import discord							# Overall discord library
-import json, asyncio					# json / asyncio libraries
-import sys, os 							# Lower-level operations libraries
-import urllib.request 					# Downloading
-import random							# Random (RNG)
+from discord.ext import commands # Command interface
+import discord # Overall discord library
+import json, asyncio # json / asyncio libraries
+import sys, os # Lower-level operations libraries
+import urllib.request # Downloading
+import random # Random (RNG)
 
 # - - My libraries - - #
-import checks 							# Ensures various predefined conditions are met
-from utils import imageloader 			# Image downloader
-from modules import trivia
+import checks # Ensures various predefined conditions are met
+from utils import imageloader # Image downloader
 
 class BotConfig:
 	def __init__(self, bot):

@@ -1,19 +1,19 @@
 # - - External Libraries - - #
-from discord.ext import commands		# Command interface
-import discord							# Overall discord library
-import datetime, re 					# Datetime and regular expression libraries
-import json, asyncio					# json / asyncio libraries
-import sys, os 							# Lower-level operations libraries
-import requests 						# API queries
-import urllib.request 					# Downloading
-import random							# Random (RNG)
+from discord.ext import commands # Command interface
+import discord # Overall discord library
+import datetime, re # Datetime and regular expression libraries
+import json, asyncio # json / asyncio libraries
+import sys, os # Lower-level operations libraries
+import requests # API queries
+import urllib.request # Downloading
+import random # Random (RNG)
 
 # - - My libraries - - #
-import checks 							# Ensures various predefined conditions are met
-from utils.ResponseChecker import ResponseChecker	# Checks HTTP response codes
-from utils.QueueType import QueueType				# Converts queue IDs to names
-from utils.MapNames import MapNames					# Converts map IDs to names
-from utils.Champion import *						# Various champion data related operations
+import checks # Ensures various predefined conditions are met
+from utils.ResponseChecker import ResponseChecker # Checks HTTP response codes
+from utils.QueueType import QueueType # Converts queue IDs to names
+from utils.MapNames import MapNames	# Converts map IDs to names
+from utils.Champion import * # Various champion data related operations
 
 # - - - - - - - - - - - - - - - - - - - - - - #
 # - - League of Legends API Usage section - - #
