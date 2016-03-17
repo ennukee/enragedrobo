@@ -3,6 +3,7 @@ from discord.ext import commands
 import discord	
 import urllib.request					
 
+
 # - - - - - - - - - - - - - - - - - - - - - -  #
 # - -          General use methods        - -  #
 # - - - - - - - - - - - - - - - - - - - - - -  #
@@ -31,6 +32,7 @@ def champion_stats_by_id(id):
 	else:
 		return None
 
+
 # - - - - - - - - - - - - - - - - - - - - - -  #
 # - -         Data loading methods        - -  #
 # - - - - - - - - - - - - - - - - - - - - - -  #
@@ -48,6 +50,7 @@ def load_champion_data(name):
 		return
 	with open('data/league/champions/{}.json'.format(name)) as f:
 		return json.load(f)['data'][name]
+
 
 # - - - - - - - - - - - - - - - - - - - - - -  #
 # - -        Data refreshing methods      - -  #

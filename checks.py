@@ -15,12 +15,14 @@ def is_owner_check(message):
 def is_owner():
     return commands.check(lambda ctx: is_owner_check(ctx.message))
 
+
 # Admin check (using admins.json) #
 def is_admin_check(message):
 	return str(message.author.id) in admins()
 
 def is_admin():
 	return commands.check(lambda ctx: is_admin_check(ctx.message))
+
 
 # Not-the-bot check #
 def not_bot_check(message):

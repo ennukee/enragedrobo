@@ -16,4 +16,5 @@ class BotConstants:
 	def get_gamedata(self):
 		return [self.__gamechannel, self.__gameserver, self.__gamestarter.id]
 
+
 botv = BotConstants()

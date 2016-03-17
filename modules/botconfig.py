@@ -10,6 +10,7 @@ import random # Random (RNG)
 import checks # Ensures various predefined conditions are met
 from utils import imageloader # Image downloader
 
+
 class BotConfig:
 	def __init__(self, bot):
 		self.bot = bot

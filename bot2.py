@@ -18,6 +18,7 @@ import numpy as np # Advanced number/set arithmetic
 import checks # Ensures various predefined conditions are met
 from utils import imageloader # Image downloader
 
+
 # - - - - - - - - - - #
 # - - Setup stuff - - #
 # - - - - - - - - - - #
@@ -45,6 +46,7 @@ bot = commands.Bot(command_prefix=[';'], description=description, pm_help=None, 
 
 # - - Game constants - - #
 from utils.BotConstants import *
+
 
 # - - - - - - - - - - - - - - - - - - - - - -  #
 # - - Bot commands / generic library usage - - #
@@ -130,6 +132,7 @@ async def avatar(ctx, *name : str):
 			await bot.say(msg)
 			return
 	await bot.say("Invalid name")
+
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -  #
 # - - Beginning of utility section (non-api related) - - #
