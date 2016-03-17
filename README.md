@@ -21,7 +21,9 @@ A massive improvement over Priestism Bot, you should be able to run your own ins
 
 **Please note**: You need to know your discord ID. You can get this through other means, or you can remove the `@checks.is_owner()` line above `async def evalc(...)` in `modules/botconfig.py` then run the command `;evalc ctx.message.author.id` in Discord to reveal your ID. Remember to put that line back though, as this command is very abusable if the public is capable of accessing it.
 
-There are three `.example` files provided for the 3 json files you need to modify. Just remove the `.example` and edit them as necessary.
+There are three `.example` files provided for the 3 json files you need to modify. Just remove the `.example` and edit them as necessary. 
+
+Make sure your bot is already connected to your server before trying to use it (it obviously won't work if it can't see your commands!)
 
 The files you do need to modify are as following:
 
