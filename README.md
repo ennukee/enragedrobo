@@ -1,6 +1,8 @@
 # enragedrobo
 ### A Discord bot using discord.py
 
+`README last updated 3/17/2016 at 5:10P.M. Eastern Standard Time`
+
 This is my personal bot for my Discord server(s). It is an improved version of an older project, [Priestism Bot](https://github.com/enragednuke/priestism_bot).
 
 ####Requirements:
