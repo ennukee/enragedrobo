@@ -23,3 +23,4 @@ def load_splash_art(champ, skin_num, valid):
 			raise e
 	else:
 		raise ValueError('That champion is invalid')
+

@@ -15,3 +15,4 @@ class ResponseChecker:
 			503: "Service unavailable"
 		}
 		return __meanings[int(i)]
+

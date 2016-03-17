@@ -14,3 +14,4 @@ class MapNames:
 		}
 		return __meanings[int(i)]
 
+

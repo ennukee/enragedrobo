@@ -40,3 +40,4 @@ class QueueType:
 			410: "Ranked 5v5 Draft Pick games"
 		}
 		return __meanings[int(i)]
+

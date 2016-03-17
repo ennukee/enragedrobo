@@ -76,3 +76,4 @@ def refresh_realm_data(realm='na'):
 	except (ValueError, urllib.request.URLError) as e:
 		raise e
 	
+  
