@@ -72,6 +72,7 @@ async def on_message(message):
 
 	if bot.user in message.mentions or bot.user.name.lower() in message.content.lower():
 		await bot.send_message(message.channel, "I\'m a bot! If you're trying to talk to me, you probably mean to talk to my creator <@126122455248011265>")
+
 	if not message.attachments and message.content[0] in bot.command_prefix:
 		if message.content[1:] in custom_command_list():
 			with open('data/custom_commands/{}.json'.format(message.content[1:])) as f:
@@ -133,6 +134,16 @@ async def avatar(ctx, *name : str):
 			return
 	await bot.say("Invalid name")
 
+@bot.command()
+async def load(name : str):
+  possible = ['music']
+  if name.lower() not in possible:
+    await bot.say("That is not a loadable file")
+    return
+  else:
+    if name.lower() == 'music':
+      await bot.say("Loading music bot (note: this method makes the normal bot operations unusable until ;end is called)")
+      os.system("py bot2_music.py")
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -  #
 # - - Beginning of utility section (non-api related) - - #
@@ -165,4 +176,3 @@ if __name__ == '__main__':
 
 	login = load_credentials()
 	bot.run(login['email'], login['password'])
-  
