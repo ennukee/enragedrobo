@@ -13,12 +13,12 @@ This is my personal bot for my Discord server(s). It is an improved version of a
 
 |File|Feature|
 |---|---|
-|modules/trivia.py|Trivia! (Only League of Legends by request for now, but will expand into the future)|
-|modules/botconfig.py|Evaluate python code in the Discord server via `evalc`|
-|modules/botconfig.py|Custom commands that can be customized to be evaluated as code, or specified whether or not to be outputted to the server via `addcmd <name> <is_code> <output_to_chat> <content>`|
-|bot2.py|View larger versions of the default small avatars via `avatar`|
-|bot2_music.py|Music queue|
-|???|Much, much more to be added! (especially porting old functionality from my previous project)|
+|`modules/trivia.py`|Trivia! (Only League of Legends by request for now, but will expand into the future)|
+|`modules/botconfig.py`|Evaluate python code in the Discord server via `evalc`|
+|`modules/botconfig.py`|Custom commands that can be customized to be evaluated as code, or specified whether or not to be outputted to the server via `addcmd <name> <is_code> <output_to_chat> <content>`|
+|`bot2.py`|View larger versions of the default small avatars via `avatar`|
+|`bot2_music.py`|Music queue|
+|`???`|Much, much more to be added! (especially porting old functionality from my previous project)|
 
 ####Some things to note:
 
