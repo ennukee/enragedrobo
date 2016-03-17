@@ -9,6 +9,15 @@ This is my personal bot for my Discord server(s). It is an improved version of a
  * discord.py (async branch rewrite)
  * Riot Games API key
 
+####What it can do:
+
+ * Trivia! (Only League of Legends by request for now, but will expand into the future)
+ * Evaluate python code in the Discord server via `evalc`
+ * View larger versions of the default small avatars
+ * Music queue
+ * Custom commands that can be customized to be evaluated as code, or specified whether or not to be outputted to the server via `addcmd <name> <is_code> <output_to_chat> <content>`
+ * Much, much more to be added! (especially porting old functionality from my previous project)
+
 ####Some things to note:
 
  * The music bot is rougher looking than the main bot. This is because it was built on a code base that used an older version of discord.py, so it won't look nearly as nice nor use the new commands interface.
