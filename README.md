@@ -9,6 +9,11 @@ This is my personal bot for my Discord server(s). It is an improved version of a
  * discord.py (async branch rewrite)
  * Riot Games API key
 
+####Some things to note:
+
+ * The music bot is rougher looking than the main bot. This is because it was built on a code base that used an older version of discord.py, so it won't look nearly as nice nor use the new commands interface.
+ * Lots of things are not 100% completed or safeguarded against exceptions. There are thousands of lines of code to be added, fear not.
+ * Not all the code is 100% efficient and I know this. I'm no python prodigy, but I try to make my code as efficient as I can think to make it. If you know how to make certain blocks drastically more efficient without massively elongating the code itself, feel free to fork the repo and push a pull request with your changes.
 
 ####Setup:
 
