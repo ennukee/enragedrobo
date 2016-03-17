@@ -15,7 +15,7 @@ This is my personal bot for my Discord server(s). It is an improved version of a
  * Lots of things are not 100% completed or safeguarded against exceptions. There are thousands of lines of code to be added, fear not.
  * Not all the code is 100% efficient and I know this. I'm no python prodigy, but I try to make my code as efficient as I can think to make it. If you know how to make certain blocks drastically more efficient without massively elongating the code itself, feel free to fork the repo and push a pull request with your changes.
 
-####Setup:
+##Setup
 
 A massive improvement over Priestism Bot, you should be able to run your own instance of this bot with relative ease. 
 
