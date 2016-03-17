@@ -14,7 +14,7 @@ This is my personal bot for my Discord server(s). It is an improved version of a
 
 A massive improvement over Priestism Bot, you should be able to run your own instance of this bot with relative ease. 
 
-**Please note**, however, that you need to know your discord ID. You can get this through other means, or you can remove the `@checks.is_owner()` line in `modules/botconfig.py` then run the command `;evalc ctx.message.author.id` to reveal your ID. Remember to put that line back though, as this command is very abusable if the public is capable of accessing it.
+**Please note**: You need to know your discord ID. You can get this through other means, or you can remove the `@checks.is_owner()` line above `async def evalc(...)` in `modules/botconfig.py` then run the command `;evalc ctx.message.author.id` in Discord to reveal your ID. Remember to put that line back though, as this command is very abusable if the public is capable of accessing it.
 
 There are three `.example` files provided for the 3 json files you need to modify. Just remove the `.example` and edit them as necessary.
 
