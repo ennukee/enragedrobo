@@ -15,6 +15,7 @@ from utils.QueueType import QueueType # Converts queue IDs to names
 from utils.MapNames import MapNames	# Converts map IDs to names
 from utils.Champion import * # Various champion data related operations
 
+
 # - - - - - - - - - - - - - - - - - - - - - - #
 # - - League of Legends API Usage section - - #
 #      Base URL: https://na.api.pvp.net/      #
