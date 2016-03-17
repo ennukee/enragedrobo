@@ -7,3 +7,7 @@ data/league/champions/*
 data/league/champion.json
 data/league/na.json
 realms/na.json
+data/music/*
+__pycache__/*
+data/__pycache__/*
+modules/__pycache__/*
