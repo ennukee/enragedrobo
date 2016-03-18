@@ -1,6 +1,8 @@
 # enragedrobo
 ### A Discord bot using discord.py
 
+`README last updated 3/17/2016 at 5:10P.M. Eastern Standard Time`
+
 This is my personal bot for my Discord server(s). It is an improved version of an older project, [Priestism Bot](https://github.com/enragednuke/priestism_bot).
 
 ####Requirements:
@@ -8,6 +10,18 @@ This is my personal bot for my Discord server(s). It is an improved version of a
  * Python 3.4.3+
  * discord.py (async branch rewrite)
  * Riot Games API key
+
+####What it can do and where to find it
+
+|File|Feature|
+|---|---|
+|`modules/trivia.py`|Trivia! (Only League of Legends by request for now, but will expand into the future)|
+|`modules/leagueapi.py`|Can pull various data from the League API (incomplete) via `player` and `champion`|
+|`modules/botconfig.py`|Evaluate python code in the Discord server via `evalc`|
+|`modules/botconfig.py`|Custom commands that can be customized to be evaluated as code, or specified whether or not to be outputted to the server via `addcmd <name> <is_code> <output_to_chat> <content>`|
+|`bot2.py`|View larger versions of the default small avatars via `avatar`|
+|`bot2_music.py`|Music queue|
+|`???`|Much, much more to be added! (especially porting old functionality from my previous project)|
 
 ####Some things to note:
 
