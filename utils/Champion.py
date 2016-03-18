@@ -1,15 +1,26 @@
 import json
 from discord.ext import commands	
 import discord	
-import urllib.request					
+import urllib.request				
+import requests	
+from utils.BasicUtility import * # Basic utility functions
+from utils.ResponseChecker import ResponseChecker
 
+"""
+League of Legends API non-command related methodology (keyword: Champion)
+
+Contains various logic used in the commands located in `leagueapi.py`
+"""
+
+riot_base = "https://na.api.pvp.net"
+params = dict(api_key=load_api_key('LoL'))
 
 # - - - - - - - - - - - - - - - - - - - - - -  #
 # - -          General use methods        - -  #
 # - - - - - - - - - - - - - - - - - - - - - -  #
 
 def champion_name_by_id(id):
-	name = champion_data_by_id(id)
+	name = champion_stats_by_id(id)
 	if(name):
 		return name['id']
 	else:
@@ -32,6 +43,25 @@ def champion_stats_by_id(id):
 	else:
 		return None
 
+def player_data(name, region='na'):
+    """Find a player's ID by their summoner name"""
+    url = riot_base + '/api/lol/{}/v1.4/summoner/by-name/{}'.format(region, name)
+    resp = requests.get(url=url, params=params)
+    if(ResponseChecker.is_good(resp.status_code)):
+      data = json.loads(resp.text)[name.lower()]
+      return data
+    else:
+      raise ValueError(ResponseChecker.meaning(resp.status_code))
+
+def player_champion_data(p_id, region='na'):
+  """Finds a player's champion data (level, mastery, etc) by their summoner ID"""
+  url = riot_base + '/championmastery/location/{}1/player/{}/champions'.format(region.upper(), p_id)
+  resp = requests.get(url=url, params=params)
+  if(ResponseChecker.is_good(resp.status_code)):
+    data = json.loads(resp.text)
+    return data
+  else:
+    raise ValueError(ResponseChecker.meaning(resp.status_code))
 
 # - - - - - - - - - - - - - - - - - - - - - -  #
 # - -         Data loading methods        - -  #

@@ -17,6 +17,8 @@ import numpy as np # Advanced number/set arithmetic
 # - - My libraries - - #
 import checks # Ensures various predefined conditions are met
 from utils import imageloader # Image downloader
+from utils.Champion import *
+from utils.BasicUtility import * # Basic utility functions
 
 
 # - - - - - - - - - - #
@@ -125,6 +127,23 @@ async def refresh(*names : str):
 			print(e)
 
 @bot.command(pass_context=True, hidden=True)
+@checks.is_owner()
+async def evalc(ctx, *, code : str):
+    """Evaluates code (via RoboDanny source)"""
+    code = code.strip('` ')
+    python = '```py\n{}\n```'
+    result = None
+    try:
+        result = eval(code)
+    except Exception as e:
+        await bot.say(python.format(type(e).__name__ + ': ' + str(e)))
+        return
+
+    if asyncio.iscoroutine(result):
+        result = await result
+    await bot.say(python.format(result))
+
+@bot.command(pass_context=True, hidden=True)
 async def avatar(ctx, *name : str):
 	"""Retrieve a larger version of any users' avatar."""
 	user = ' '.join(name)
@@ -144,29 +163,6 @@ async def load(name : str):
     if name.lower() == 'music':
       await bot.say("Loading music bot (note: this method makes the normal bot operations unusable until ;end is called)")
       os.system("py bot2_music.py")
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -  #
-# - - Beginning of utility section (non-api related) - - #
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -  #
-
-def load_credentials():
-	with open('data/login.json') as f:
-		return json.load(f)
-
-def load_api_key(name):
-	with open('data/apikeys.json') as f:
-		try:
-			return json.load(f)[name]
-		except KeyError as e:
-			return None
-
-def admins():
-	with open('data/admins.json') as f:
-		j = json.load(f)
-		return [x for x in j if j[x]==1]
-
-def custom_command_list():
-	return [x[:-5] for x in os.listdir('./data/custom_commands')]
 
 # - - Program run section - - #
 

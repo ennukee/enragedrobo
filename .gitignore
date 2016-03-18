@@ -9,4 +9,5 @@ data/league/champions/*
 data/league/*
 realms/na.json
 data/music/*
+ids_test.py
 *.pyc
