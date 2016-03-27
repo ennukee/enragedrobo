@@ -32,7 +32,7 @@ class LeagueAPI:
 
   @commands.command(pass_context=True)
   async def player(self, ctx, name : str, show_id=False):
-    """League of Legends player data"""
+    """League of Legends player data (do not include spaces in names)"""
     # TODO: Incomplete (use other API queries to improve this)
     try:
       data = player_data(name)

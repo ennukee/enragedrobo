@@ -19,3 +19,6 @@ def admins():
 
 def custom_command_list():
   return [x[:-5] for x in os.listdir('./data/custom_commands')]
+
+def clean(i):
+  return i.lower().replace(' ','')

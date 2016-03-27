@@ -104,8 +104,8 @@ class Bot(discord.Client):
       filepath = "data/music/{}.webm".format(video.title)
       if(video.viewcount < 2500 or video.likes / video.dislikes < 10):
         await self.send_message(message.channel, "Sorry, that video has too little views / poor rating to be trusted.")
-      elif(video.length > 300):
-        await self.send_message(message.channel, "Max length of a request is **5 minutes**, please!")
+      elif(video.length > 420):
+        await self.send_message(message.channel, "Max length of a request is **7 minutes**, please!")
       else:
         await self.send_message(message.channel, "Currently downloading the requested song...")
         try:
@@ -134,8 +134,7 @@ class Bot(discord.Client):
         await self.play_next_song.wait()
 
   async def on_ready(self):
-    print('Logged in as')
-    print(self.user.name)
+    print('Music bot activated as...')
     print(self.user.id)
     print('------')
 

@@ -9,6 +9,8 @@ import random # Random (RNG)
 # - - My libraries - - #
 import checks # Ensures various predefined conditions are met
 from utils import imageloader # Image downloader
+from utils.BasicUtility import *
+from utils.BotConstants import *
 
 
 class BotConfig:
@@ -70,6 +72,52 @@ class BotConfig:
     else:
       os.remove('data/custom_commands/{}.json'.format(name))
       await self.bot.say('Command `{}` successfully removed'.format(name))
+
+  @commands.command(pass_context=True)
+  async def lock(self, ctx):
+    """ Locks a channel and prevents **any** access while it is locked """
+    author_channel = ctx.message.author.voice_channel
+    if ctx.message.channel.is_private:
+      await self.bot.say('This is not available in private messages')
+    if author_channel == ctx.message.server.afk_channel:
+      await self.bot.say('You cannot lock the AFK channel!')
+    elif not ctx.message.author.permissions_in(ctx.message.channel).move_members:
+      await self.bot.say('You do not have sufficient permissions to lock this channel')
+    elif not ctx.message.server.afk_channel:
+      await self.bot.say('You cannot lock a channel on a server without an AFK channel')
+    elif botv.private_channel is not None:
+      await self.bot.say('There is already a locked channel, sorry')
+    else:
+      
+      if author_channel: 
+        if ctx.message.server.me.permissions_in(author_channel).move_members:
+          botv.set_private_channel((ctx.message.author, author_channel))
+          await self.bot.say('Channel **{}** has been locked by {}'.format(author_channel.name, ctx.message.author.name))
+        else:
+          await self.bot.say('I cannot lock a channel if I do not have permissions to move players')
+
+  @commands.command(pass_context=True)
+  async def unlock(self, ctx):
+    """ Unlock the locked channel (if there is one)"""
+    if botv.private_channel is None:
+      await self.bot.say('There is no locked channel')
+    elif not ctx.message.author.permissions_in(ctx.message.channel).move_members:
+      await self.bot.say('You do not have sufficient permissions to unlock this channel')
+    else:
+      await self.bot.say('Channel **{0.name}** unlocked by **{1.name}** (originally locked by **{2.name}**)'.format(botv.private_channel[1], ctx.message.author, botv.private_channel[0]))
+      botv.set_private_channel(None)
+
+  @commands.command(pass_context=True)
+  @checks.is_admin()
+  async def channelkick(self, ctx):
+    """ Removes all users from the channel the typer is in """
+    if not ctx.message.author.voice_channel:
+      await self.bot.say('You are not in a voice channel')
+    elif not ctx.message.server.afk_channel:
+      await self.bot.say('Server must have an AFK channel to use this command')
+    else:
+      for person in ctx.message.author.voice_channel.voice_members:
+        await self.bot.move_member(person, ctx.message.server.afk_channel)
 
 def setup(bot):
   bot.add_cog(BotConfig(bot))
