@@ -33,7 +33,8 @@ Hey there, I'm enragedrobo. A bot designed by Dylan (aka enragednuke) to provide
 initial_extensions = [
 	'modules.trivia',
 	'modules.leagueapi',
-	'modules.botconfig'
+	'modules.botconfig',
+  'modules.funstuff'
 ]
 
 # - - Logger information - - #
@@ -49,7 +50,6 @@ bot = commands.Bot(command_prefix=[';'], description=description, pm_help=None, 
 # - - Game constants - - #
 from utils.BotConstants import *
 
-
 # - - - - - - - - - - - - - - - - - - - - - -  #
 # - - Bot commands / generic library usage - - #
 # - - - - - - - - - - - - - - - - - - - - - -  #
@@ -57,7 +57,6 @@ from utils.BotConstants import *
 @bot.event
 async def on_ready():
 	print('Logged in as')
-	print(bot.user.name)
 	print(bot.user.id)
 	print('------')
 	await bot.change_status(game=discord.Game(name="Half Life 3"))
@@ -80,7 +79,7 @@ async def on_message(message):
 			with open('data/custom_commands/{}.json'.format(message.content[1:])) as f:
 				data = json.load(f)
 				try:
-					output = eval(data['content']) if data['code'] else data['code']
+					output = eval(data['content']) if data['code'] else data['content']
 				except Exception as e:
 					await bot.send_message(message.channel, '```py\n{}\n```'.format(type(e).__name__ + ': ' + str(e)))
 					return
@@ -89,6 +88,13 @@ async def on_message(message):
 				if data['output']:
 					await bot.send_message(message.channel, output)
 	await bot.process_commands(message)
+
+@bot.event
+async def on_voice_state_update(before, after):
+  if after.voice_channel and before.voice_channel != after.voice_channel:
+    if botv.private_channel and after.voice_channel == botv.private_channel[1]:
+      await bot.move_member(after, after.server.afk_channel)
+      await bot.send_message(after, 'You cannot join this channel while it is locked! (locked by **{}**)'.format(botv.private_channel[0]))
 
 @bot.event
 async def on_member_update(before, after):
@@ -129,7 +135,7 @@ async def refresh(*names : str):
 @bot.command(pass_context=True, hidden=True)
 @checks.is_owner()
 async def evalc(ctx, *, code : str):
-    """Evaluates code (via RoboDanny source)"""
+    """Evaluates python code"""
     code = code.strip('` ')
     python = '```py\n{}\n```'
     result = None
@@ -142,6 +148,70 @@ async def evalc(ctx, *, code : str):
     if asyncio.iscoroutine(result):
         result = await result
     await bot.say(python.format(result))
+
+@bot.command(pass_context=True, hidden=True)
+@checks.is_admin()
+async def announce(ctx, role : str, *message : str):
+  msg = ' '.join(message)
+
+  role = discord.utils.find(lambda m : clean(m.name) == clean(role), ctx.message.server.roles)
+  if role is None:
+    await bot.say("That role does not exist")
+    return
+
+  people_with_role = [person for person in ctx.message.server.members if role in person.roles]
+  send = ""
+  for person in people_with_role:
+    send += "<@{}> ".format(person.id)
+  send += "\n{}".format(msg)
+  await bot.say(send)
+
+@bot.command(pass_context=True, hidden=True)
+@checks.is_owner()
+async def survey(ctx, role : str, *question : str):
+  msg = ' '.join(question)
+
+  role = discord.utils.find(lambda m : clean(m.name) == clean(role if role is not 'everyone' else '@everyone'), ctx.message.server.roles)
+  if role is None:
+    await bot.say("That role does not exist")
+    return
+
+  people_with_role = [person for person in ctx.message.server.members if role in person.roles]
+  responses = {}
+
+  await bot.say("Survey started")
+
+  for person in people_with_role:
+    survey = """\
+      {} has sent a survey. You have two minutes to reply with your response.
+      (Do not try to use multiple responses, it will only record the first thing you say. Use shift+enter to have multiple lines)
+
+      **Question**: {}
+      """
+    print('Sending message to {}'.format(person.name.encode('utf-8')))
+    await bot.send_message(person, survey.format(ctx.message.author, msg))
+    response = await bot.wait_for_message(timeout=120.0, author=person)
+    print('Response received from {}'.format(person.name.encode('utf-8')))
+
+    if response is None:
+      responses[person.name] = 'No response'
+      await bot.send_message(person, "You took too long, so your chance to reply has ended. Thank you anyway.")
+    else:
+      responses[person.name] = response
+      await bot.send_message(person, "Response received, thank you")
+
+  await bot.say("Survey completed")
+
+  result = """\
+    Survey completed.
+
+    **Results**
+    {}
+    """
+  response_list = ""
+  for response in responses:
+    response_list += "**{}**: {}\n".format(response, responses[response].content)
+  await bot.send_message(ctx.message.author, result.format(response_list))
 
 @bot.command(pass_context=True, hidden=True)
 async def avatar(ctx, *name : str):
