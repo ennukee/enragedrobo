@@ -7,6 +7,8 @@
 
 This is my personal bot for my Discord server(s). It is an improved version of an older project, [Priestism Bot](https://github.com/enragednuke/priestism_bot).
 
+If you are simply looking to add enragedrobo to your server, please just use [this link](https://discordapp.com/oauth2/authorize?client_id=183740072011628544&scope=bot&permissions=84143104). It will include all permissions the bot will need for full functionality.
+
 ####Requirements:
 
  * Python 3.4.3+
@@ -53,8 +55,7 @@ The files you do need to modify are as following:
 #### data/login.json
 ```py
 {
-  "email": "YOUR EMAIL HERE",
-  "password": "YOUR PASSWORD HERE"
+  "token": "YOUR BOT TOKEN HERE"
 }
 ```
 

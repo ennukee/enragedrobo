@@ -36,6 +36,8 @@ class BotConfig:
       await self.bot.delete_message(ctx.message)
     elif(setting == 'game'):
       await self.bot.change_status(discord.Game(name=' '.join(inp)))
+    else:
+      await getattr(self.bot, setting)(*inp)
 
   @commands.command(hidden=True)
   @checks.is_admin()
@@ -74,6 +76,23 @@ class BotConfig:
       await self.bot.say('Command `{}` successfully removed'.format(name))
 
   @commands.command(pass_context=True)
+  async def permissions(self, ctx, name = None):
+    """Get the permissions of yourself or the bot"""
+    if name == 'bot':
+      perms = ctx.message.server.me.permissions_in(ctx.message.channel)
+      msg = "**I can...** \n"
+    else:
+      perms = ctx.message.author.permissions_in(ctx.message.channel)
+      msg = "**You can...** \n"
+
+    str_perms = []
+    for i in ['create_instant_invite', 'kick_members', 'ban_members', 'manage_roles', 'manage_channels', 'manage_server', 'read_messages', 'send_messages', 'send_tts_messages', 'manage_messages', 'embed_links', 'attach_files', 'read_message_history', 'mention_everyone','mute_members', 'deafen_members', 'move_members']:
+      if getattr(perms, i):
+          msg += "{}\n".format(i)
+          str_perms.append(i)
+    await self.bot.say(msg)
+
+  @commands.command(pass_context=True)
   async def lock(self, ctx):
     """ Locks a channel and prevents **any** access while it is locked """
     author_channel = ctx.message.author.voice_channel
@@ -88,8 +107,8 @@ class BotConfig:
     elif botv.private_channel is not None:
       await self.bot.say('There is already a locked channel, sorry')
     else:
-      
-      if author_channel: 
+
+      if author_channel:
         if ctx.message.server.me.permissions_in(author_channel).move_members:
           botv.set_private_channel((ctx.message.author, author_channel))
           await self.bot.say('Channel **{}** has been locked by {}'.format(author_channel.name, ctx.message.author.name))

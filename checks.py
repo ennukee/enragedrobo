@@ -30,4 +30,3 @@ def not_bot_check(message):
 
 def not_bot():
 	return commands.check(lambda ctx: not_bot_check(ctx.message))
-  

@@ -1,6 +1,6 @@
 from discord.ext import commands    # Command interface
 import discord              # Overall discord library
-import datetime, time # Date stuffs 
+import datetime, time # Date stuffs
 import re           # regular expression libraries
 import json, asyncio          # json / asyncio libraries
 import sys, os              # Lower-level operations libraries
@@ -8,7 +8,7 @@ import requests             # API queries
 import urllib.request           # Downloading
 import random             # Random (RNG)
 from time import sleep          # For delays
-from collections import defaultdict 
+from collections import defaultdict
 import numpy as np            # Advanced number/set arithmetic
 
 from utils.Champion import *      # Various champion data related operations
@@ -48,6 +48,10 @@ class Trivia:
         ans = await self.bot.wait_for_message(timeout=1.0)
         if ans and ans.channel.id == current_channel and ans.author.id != botv.id:
           answers[ans.author.name] = ans.content
+          try:
+            await self.bot.delete_message(ans)
+          except Exception as e:
+            pass
 
       await self.bot.say('Currently received an answer from: {}\n\nYou have ten more seconds to respond.'.format(', '.join(answers)))
 
@@ -56,6 +60,10 @@ class Trivia:
         ans = await self.bot.wait_for_message(timeout=1.0)
         if ans and ans.author.id != botv.id:
           answers[ans.author.name] = ans.content
+          try:
+            await self.bot.delete_message(ans)
+          except Exception as e:
+            pass
 
       final_message = "**Here are the results**:\n"
       for name,resp in answers.items():
@@ -95,9 +103,9 @@ class Trivia:
         possible = [x.strip(' ') for x in re.split(',|/',ability_name.lower())]
 
         def is_correct(inp):
-          inp.lower().strip() in possible
+          return inp.lower() in possible
 
-        await self.bot.say("What is the name of **{}'s {}**?".format(champ_name, number_to_letter[ability_number]))     
+        await self.bot.say("What is the name of **{}'s {}**?".format(champ_name, number_to_letter[ability_number]))
         await ask(ability_name)
 
       elif(game_type == 'spell_to_name'):
@@ -113,7 +121,7 @@ class Trivia:
           return True
 
         await self.bot.say("Whose ability is **{}**? (format example: Annie W)".format(ability_name))
-        await ask(champ_name + " " + abil)
+        await ask(champ_name + " " + number_to_letter[ability_number])
 
       elif(game_type == 'title_to_name'):
         """ TITLE TO NAME PORTION """
@@ -168,7 +176,7 @@ class Trivia:
         """ BLURB TO NAME PORTION """
         reg = re.compile(re.escape(champ_name), re.IGNORECASE)
         blurb = reg.sub('********', data['blurb'].replace('<br>','\n')).replace(data['name'], '*******')
-        
+
         def is_correct(inp):
           try:
             name = str(re.sub('\'|\s','',inp)).lower()
@@ -208,7 +216,7 @@ class Trivia:
       delay = 10 if amt >= 1 else 30
       if(i<amt-1 or amt==0):
         await self.bot.say("Next question in {} seconds...".format(delay))
-      
+
       sleep(delay)
     botv.toggle_ingame()
 
