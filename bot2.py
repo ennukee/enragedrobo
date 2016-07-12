@@ -13,12 +13,15 @@ import random # Random (RNG)
 from time import sleep # For delays
 from collections import defaultdict
 import numpy as np # Advanced number/set arithmetic
+from _thread import *
+from bs4 import BeautifulSoup
 
 # - - My libraries - - #
 import checks # Ensures various predefined conditions are met
 from utils import imageloader # Image downloader
 from utils.Champion import *
 from utils.BasicUtility import * # Basic utility functions
+from utils.MALutil import * # MyAnimeList utility functions
 
 
 # - - - - - - - - - - #
@@ -30,13 +33,6 @@ description = """
 Hey there, I'm enragedrobo. A bot designed by Dylan (aka enragednuke) to provide convenient utilities.
 """
 
-initial_extensions = [
-  'modules.trivia',
-  'modules.leagueapi',
-  'modules.botconfig',
-    'modules.funstuff'
-]
-
 # - - Logger information - - #
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
@@ -45,7 +41,7 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(me
 logger.addHandler(handler)
 
 # - - Bot instantiation - - #
-bot = commands.Bot(command_prefix=[';'], description=description, pm_help=None, help_attrs=dict(hidden=True))
+bot = commands.Bot(command_prefix=['?'], description=description, pm_help=None, help_attrs=dict(hidden=True))
 
 # - - Game constants - - #
 from utils.BotConstants import *
@@ -60,7 +56,7 @@ async def on_ready():
   print(bot.user.id)
   print('------')
   await bot.change_status(game=discord.Game(name="Half Life 3"))
-  for extension in initial_extensions:
+  for extension in botv.initial_extensions:
     try:
       bot.load_extension(extension)
     except Exception as e:
@@ -71,31 +67,69 @@ async def on_message(message):
   if message.author.id == botv.id:
     return
 
-  if bot.user in message.mentions or bot.user.name.lower() in message.content.lower():
-    await bot.send_message(message.channel, "I\'m a bot! If you're trying to talk to me, you probably mean to talk to my creator <@126122455248011265>")
+  if message.content == "ayy":
+    await bot.send_message(message.channel, "lmao")
+  elif message.content == "o shit":
+    await bot.send_message(message.channel, "wadup")
+  elif message.content == "its":
+    await bot.send_message(message.channel, "dat boi")
 
-  if not message.attachments and message.content[0] in bot.command_prefix:
-    if message.content[1:] in custom_command_list():
-      with open('data/custom_commands/{}.json'.format(message.content[1:])) as f:
-        data = json.load(f)
-        print(data['code'])
-        try:
-          output = eval(data['content']) if data['code'] else data['content']
-        except Exception as e:
-          await bot.send_message(message.channel, '```py\n{}\n```'.format(type(e).__name__ + ': ' + str(e)))
-          return
-        if asyncio.iscoroutine(output):
-          output = await output
-        if data['output']:
-          await bot.send_message(message.channel, output)
+  if message.content.startswith('BUG') and message.channel.is_private:
+    bug_report = '<@{}>\nBug report by <@{}>: {}'
+    await bot.send_message(discord.Object(botv.bug_reports_channel_id), bug_report.format(botv.owner_id, message.author.id, message.content[3:]))
+
+  for user in list(set(message.mentions)): # removes duplicates
+    if botv.is_afk(user):
+      await bot.send_message(message.channel, "**{}** is AFK\n\nReason provided\n**{}**".format(user.name, botv.afk_reason(user)))
+
+    # MYANIMELIST MANGA AND ANIME SEARCH CODE #
+
+  # Link anime details by link #
+  animes = [x[0] for x in re.findall("\<(http://(www\.)?myanimelist.net/anime/\d+/?[A-Za-z\_\-(%20)]*)\>", message.content)]
+  end = []
+  for anime in animes[0:3]:
+    end.append('\n'.join(MAL_anime_info(anime)))
+  if end:
+    await bot.send_message(message.channel, '\n\n'.join(end))
+
+  # Link manga details by link #
+  mangas = [x[0] for x in re.findall("\<(http://(www\.)?myanimelist.net/manga/\d+/?[A-Za-z\_\-(%20)]*)\>", message.content)]
+  end = []
+  for manga in mangas[0:3]:
+    end.append('\n'.join(MAL_manga_info(manga)))
+  if end:
+    await bot.send_message(message.channel, '\n\n'.join(end))
+
+  search_error = "There was an issue searching **{}**. It\'s likely that the title contains characters not supported by Discord/Python\'s basic text engine\n\nIf this is not the case, please send this bot a message starting with `BUG ` and report the issue! Thanks!"
+  # Link anime details by search query #
+  anime_search = re.findall('\<([\w\s^(http|www)]*)\>', message.content)
+  end = [] # resetting old array
+  for ani_s in anime_search[0:3]:
+    print(ani_s)
+    try:
+      result = MAL_anime_search(ani_s)
+      end.append('\n'.join(MAL_anime_info(result.get('href'))))
+    except Exception as e:
+      await bot.send_message(message.channel, search_error.format(ani_s))
+      continue
+  if end:
+    await bot.send_message(message.channel, '\n'.join(end))
+
+  # Link manga details by search query #
+  manga_search = re.findall('\[([\w\s^(http|www)]*)\]', message.content)
+  end = [] # resetting old array
+  for mang_s in manga_search[0:3]:
+    print(mang_s)
+    try:
+      result = MAL_manga_search(mang_s)
+      end.append('\n'.join(MAL_manga_info(result.get('href'))))
+    except Exception as e:
+      await bot.send_message(message.channel, search_error.format(mang_s))
+      continue
+  if end:
+    await bot.send_message(message.channel, '\n'.join(end))
+
   await bot.process_commands(message)
-
-@bot.event
-async def on_voice_state_update(before, after):
-  if after.voice_channel and before.voice_channel != after.voice_channel:
-    if botv.private_channel and after.voice_channel == botv.private_channel[1]:
-      await bot.move_member(after, after.server.afk_channel)
-      await bot.send_message(after, 'You cannot join this channel while it is locked! (locked by **{}**)'.format(botv.private_channel[0]))
 
 @bot.event
 async def on_member_update(before, after):
@@ -103,35 +137,9 @@ async def on_member_update(before, after):
   if(before.id == '126122455248011265'):
     if(before.game != after.game):
       if(after.game == None):
-        await bot.change_status(game=discord.Game(name=random.choice(['Half Life 3','with your mother','Meme Simulator 2k16','Portal 3'])))
+        await bot.change_status(game=discord.Game(name=random.choice(['Half Life 3','Portal 3'])))
       else:
         await bot.change_status(game=discord.Game(name=after.game.name[::-1]))
-
-@bot.command(hidden=True)
-@checks.is_admin()
-async def refresh(*names : str):
-  if 'realm' in names:
-    try:
-      refresh_realm_data()
-      await bot.say("Successfully reloaded realm data")
-    except (ValueError, urllib.request.URLError) as e:
-      await bot.say("There was an error loading data (admin: see console)")
-      print(e)
-  if 'champion' in names:
-    try:
-      refresh_champion_data()
-      await bot.say("Successfully reloaded champion data")
-    except (ValueError, urllib.request.URLError) as e:
-      await bot.say("There was an error loading data (admin: see console)")
-      print(e)
-  if(len(names) == 0):
-    try:
-      refresh_champion_data()
-      refresh_realm_data()
-      await bot.say("Successfully reloaded all data")
-    except (ValueError, urllib.request.URLError) as e:
-      await bot.say("There was an error loading data (admin: see console)")
-      print(e)
 
 @bot.command(pass_context=True, hidden=True)
 @checks.is_owner()
@@ -151,8 +159,15 @@ async def evalc(ctx, *, code : str):
     await bot.say(python.format(result))
 
 @bot.command(pass_context=True, hidden=True)
-@checks.is_admin()
+@checks.not_private()
+@checks.is_owner()
 async def announce(ctx, role : str, *message : str):
+  """Create a message that mentions everyone in a role with a specified message.
+
+  Mainly unused now that Discord implemented role-mentions.
+
+  Currently not multi-server supported. Due to natural Discord implemention, this is likely to be removed in the near future.
+  """
   msg = ' '.join(message)
 
   role = discord.utils.find(lambda m : clean(m.name) == clean(role), ctx.message.server.roles)
@@ -168,8 +183,13 @@ async def announce(ctx, role : str, *message : str):
   await bot.say(send)
 
 @bot.command(pass_context=True, hidden=True)
-@checks.is_admin()
+@checks.not_private()
+@checks.is_owner()
 async def survey(ctx, role : str, *question : str):
+  """Send a survey to everyone of a specified role.
+
+  Currently not multi-server supported, aimed as a rework project in the future.
+  """
   msg = ' '.join(question)
 
   role = discord.utils.find(lambda m : clean(m.name) == clean(role if role is not 'everyone' else '@everyone'), ctx.message.server.roles)
@@ -218,58 +238,24 @@ async def survey(ctx, role : str, *question : str):
   await bot.send_message(ctx.message.author, result.format(response_list))
 
 @bot.command(pass_context=True)
-async def avatar(ctx, *name : str):
-  """Retrieve a larger version of any users' avatar."""
-  user = ' '.join(name)
-  for msg in ["**{0}**'s avatar: {1}".format(x.name, x.avatar_url) if x.name.lower()==user.lower() else None for x in ctx.message.server.members]:
-    if msg != None:
-      await bot.say(msg)
-      return
-  await bot.say("Invalid name")
-
-@bot.command(pass_context=True)
+@checks.not_private()
 async def commands(ctx):
-  """Returns a full list of commands (sends you a PM)"""
-  def rip_perm_name(i):
-    if len(i)==0:
-      return ["all", ""]
-    else:
-      role = str(i[0]).split()[1].split('.')[0].split('_')[1]
-      return (role, "(**{0}** only)".format(role))
+  """Returns a full list of commands (sends you a PM)
 
-  def print_table(table, forw):
-    to_return = "**{} commands**\n\n".format(forw)
-    c1w = max([len(x) for x in table.keys()])
-    c2w = max([len(x) for x in table.values()])
-    for k,v in table.items():
-      to_return += "`{0:<{col1}} {1:<{col2}}`\n".format(k,v,col1=c1w, col2=c2w)
-    return to_return
+  Can only be used from a server. Does not work in private messages."""
+  server_id = ctx.message.server.id
+  server_cmd_dir = './data/custom_commands/{}'.format(server_id)
 
-  index = {'all':{}, 'admin':{}, 'owner':{}}
-  for (name,command) in bot.commands.items():
-    params = [x for x in command.params if x not in ['self','ctx']]
-    restriction = rip_perm_name(command.checks)
-    print(restriction)
-    index[restriction[0]][name] = ('<' + '> <'.join(params) + '>' if len(params)>0 else '')
+  base_commands = "**For a full list of the global commands** the bot has to offer, please visit the bot's official website: http://enragednuke.github.io/bot.html\n"
 
-  custom_commands = "**Custom commands** (for everyone)\n\n"
-  for cmd in os.listdir('./data/custom_commands'):
-    custom_commands += "`{}`\n".format(cmd[:-5])
-
-  print(index)
-  await bot.send_message(ctx.message.author, '\n'.join( (print_table(index['owner'], 'Owner'), print_table(index['admin'], 'Admin'), print_table(index['all'], 'Everyone\'s'), custom_commands) ))
-
-@bot.command(hidden=True)
-@checks.is_admin()
-async def load(name : str):
-  possible = ['music']
-  if name.lower() not in possible:
-    await bot.say("That is not a loadable file")
-    return
+  custom_commands = "**Server commands** (for the server you messaged from)\n\n"
+  if os.path.isdir(server_cmd_dir) and len(os.listdir(server_cmd_dir))>0:
+    for cmd in os.listdir(server_cmd_dir):
+      custom_commands += "`{}`\n".format(cmd[:-5])
   else:
-    if name.lower() == 'music':
-      await bot.say("Loading music bot (note: this method makes the normal bot operations unusable until ;end is called)")
-      os.system("py bot2_music.py")
+    custom_commands += "Your server has no commands!"
+
+  await bot.send_message(ctx.message.author, '\n'.join([base_commands, custom_commands]))
 
 # - - Program run section - - #
 
@@ -278,5 +264,4 @@ if __name__ == '__main__':
     bot.command_prefix = '$'
 
   login = load_credentials()
-  #bot.client_id = login['client_id']
   bot.run(login['token'])
