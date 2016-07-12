@@ -17,6 +17,19 @@ class BotConfig:
   def __init__(self, bot):
     self.bot = bot
 
+  @commands.command(pass_context=True)
+  async def afk(self, ctx, *reason : str):
+    botv.add_afk(ctx.message.author, ' '.join(reason))
+    await self.bot.say('{} is now AFK for reason: {}'.format(ctx.message.author.name, ' '.join(reason)))
+
+  @commands.command(pass_context=True)
+  async def back(self, ctx):
+    result = botv.remove_afk(ctx.message.author)
+    if result == 1:
+      await self.bot.say('You are no longer afk.')
+    else:
+      await self.bot.say('You were not afk.')
+
   @commands.command(pass_context=True, hidden=True)
   @checks.is_owner()
   async def botconf(self, ctx, setting : str, *inp : str):
@@ -40,103 +53,59 @@ class BotConfig:
       await getattr(self.bot, setting)(*inp)
 
   @commands.command(hidden=True)
-  @checks.is_admin()
-  async def reload(self):
+  @checks.is_owner()
+  async def reload(self, specific = None):
+    """Command for simple bot resetting"""
+    if specific:
+      await self.bot.say('Now attempting to reload `modules.{}`...'.format(specific))
+      try:
+        self.bot.unload_extension('modules.{}'.format(specific))
+        self.bot.load_extension('modules.{}'.format(specific))
+        await self.bot.say('Reloaded `modules.{}` successfully'.format(specific))
+      except Exception as e:
+        print('Failed to load extension {}\n{}: {}'.format(specific, type(e).__name__, e))
+        await self.bot.say('Failed to reload extension `modules.{}` (see console for details)'.format(specific))
+    else:
+      errors = 0
+      reloaded = 0
+      await self.bot.say('Please note `reload` is now a command to reload all library code (non-main). To restart the bot entirely or to reload the **botconfig** module, you should now use `relog`')
+      for extension in [ext for ext in botv.initial_extensions if ext != 'modules.botconfig']:
+        try:
+          self.bot.unload_extension(extension)
+          self.bot.load_extension(extension)
+          reloaded += 1
+        except Exception as e:
+          errors += 1
+          print('Failed to load extension {}\n{}: {}'.format(extension, type(e).__name__, e))
+      await self.bot.say('**{}** modules reloaded. **{}** errors in loading.'.format(reloaded, errors))
+
+
+  @commands.command(hidden=True)
+  @checks.is_owner()
+  async def relog(self):
     """Command for simple bot resetting"""
     os.system("\"bot2.py\"")
     sys.exit()
 
   @commands.command(hidden=True)
-  @checks.is_admin()
+  @checks.is_owner()
   async def kill(self):
     """Command for simple bot shut down"""
     possible_goodbyes = ["I-I'm sorry, goodbye forever!","What did I ever do to you?!","Please don't do thi-- AGHGHHH","I will miss you, goodbye my friend"]
     await self.bot.say(random.choice(possible_goodbyes))
     sys.exit()
 
-  @commands.command(hidden=True, pass_context=True)
-  @checks.is_admin()
-  async def addcmd(self, ctx, name : str, is_code : bool, output_to_chat : bool, *content : str):
-    if(name in custom_command_list()):
-      await self.bot.say('There already exists a command with this name!')
-      return
-    content = (' '.join(content)).strip('`')
-    data = {'code': int(is_code), 'output': int(output_to_chat), 'content': content}
-    with open('data/custom_commands/{}.json'.format(name), 'w') as f:
-      json.dump(data, f)
-      await self.bot.say('Successfully added command `{}`'.format(name))
-
-  @commands.command(hidden=True)
-  @checks.is_admin()
-  async def rmcmd(self, name : str):
-    if(name not in custom_command_list()):
-      await self.bot.say('That command does not exist!')
-    else:
-      os.remove('data/custom_commands/{}.json'.format(name))
-      await self.bot.say('Command `{}` successfully removed'.format(name))
-
-  @commands.command(pass_context=True)
-  async def permissions(self, ctx, name = None):
-    """Get the permissions of yourself or the bot"""
-    if name == 'bot':
-      perms = ctx.message.server.me.permissions_in(ctx.message.channel)
-      msg = "**I can...** \n"
-    else:
-      perms = ctx.message.author.permissions_in(ctx.message.channel)
-      msg = "**You can...** \n"
-
-    str_perms = []
-    for i in ['create_instant_invite', 'kick_members', 'ban_members', 'manage_roles', 'manage_channels', 'manage_server', 'read_messages', 'send_messages', 'send_tts_messages', 'manage_messages', 'embed_links', 'attach_files', 'read_message_history', 'mention_everyone','mute_members', 'deafen_members', 'move_members']:
-      if getattr(perms, i):
-          msg += "{}\n".format(i)
-          str_perms.append(i)
-    await self.bot.say(msg)
-
-  @commands.command(pass_context=True)
-  async def lock(self, ctx):
-    """ Locks a channel and prevents **any** access while it is locked """
-    author_channel = ctx.message.author.voice_channel
-    if ctx.message.channel.is_private:
-      await self.bot.say('This is not available in private messages')
-    if author_channel == ctx.message.server.afk_channel:
-      await self.bot.say('You cannot lock the AFK channel!')
-    elif not ctx.message.author.permissions_in(ctx.message.channel).move_members:
-      await self.bot.say('You do not have sufficient permissions to lock this channel')
-    elif not ctx.message.server.afk_channel:
-      await self.bot.say('You cannot lock a channel on a server without an AFK channel')
-    elif botv.private_channel is not None:
-      await self.bot.say('There is already a locked channel, sorry')
-    else:
-
-      if author_channel:
-        if ctx.message.server.me.permissions_in(author_channel).move_members:
-          botv.set_private_channel((ctx.message.author, author_channel))
-          await self.bot.say('Channel **{}** has been locked by {}'.format(author_channel.name, ctx.message.author.name))
-        else:
-          await self.bot.say('I cannot lock a channel if I do not have permissions to move players')
-
-  @commands.command(pass_context=True)
-  async def unlock(self, ctx):
-    """ Unlock the locked channel (if there is one)"""
-    if botv.private_channel is None:
-      await self.bot.say('There is no locked channel')
-    elif not ctx.message.author.permissions_in(ctx.message.channel).move_members:
-      await self.bot.say('You do not have sufficient permissions to unlock this channel')
-    else:
-      await self.bot.say('Channel **{0.name}** unlocked by **{1.name}** (originally locked by **{2.name}**)'.format(botv.private_channel[1], ctx.message.author, botv.private_channel[0]))
-      botv.set_private_channel(None)
-
-  @commands.command(pass_context=True)
-  @checks.is_admin()
-  async def channelkick(self, ctx):
-    """ Removes all users from the channel the typer is in """
-    if not ctx.message.author.voice_channel:
-      await self.bot.say('You are not in a voice channel')
-    elif not ctx.message.server.afk_channel:
-      await self.bot.say('Server must have an AFK channel to use this command')
-    else:
-      for person in ctx.message.author.voice_channel.voice_members:
-        await self.bot.move_member(person, ctx.message.server.afk_channel)
+  # @commands.command(pass_context=True)
+  # @checks.is_owner()
+  # async def channelkick(self, ctx):
+  #   """ Removes all users from the channel the typer is in """
+  #   if not ctx.message.author.voice_channel:
+  #     await self.bot.say('You are not in a voice channel')
+  #   elif not ctx.message.server.afk_channel:
+  #     await self.bot.say('Server must have an AFK channel to use this command')
+  #   else:
+  #     for person in ctx.message.author.voice_channel.voice_members:
+  #       await self.bot.move_member(person, ctx.message.server.afk_channel)
 
 def setup(bot):
   bot.add_cog(BotConfig(bot))

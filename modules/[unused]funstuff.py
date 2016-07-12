@@ -17,21 +17,6 @@ class FunStuff:
   def __init__(self, bot):
     self.bot = bot
 
-  @commands.command(pass_context=True, hidden=True)
-  async def funnify(self, ctx, mode : int, word : str):
-    print('funnify mode {} word {}'.format(mode, word))
-    if mode == 1:
-      m = ""
-      for i in word:
-        m += " "*random.randrange(1,10) + i + '\n'
-      await self.bot.say(m)
-
-    if mode == 2:
-      m = ""
-      for i in word:
-        m += random.randrange(0,10)*i + '\n'
-      await self.bot.say(m)
-
   @commands.command(pass_context=True)
   async def timeuntil(self, ctx, time : str, format = '%m/%d/%Y@%I%p'):
 

@@ -85,17 +85,5 @@ class LeagueAPI:
 
     await self.bot.say(textwrap.dedent('\n'.join(msg)))
 
-  @commands.command()
-  async def champion(self, name : str):
-    """League of Legends champion data"""
-    # TODO: Incomplete
-    name = name.replace('\'','')
-    data = champion_stats_by_name(name.capitalize())
-    if(data):
-      # parse data
-      await self.bot.say(data)
-    else:
-      await self.bot.say("That is not a valid champion name\n(Note: do not include spaces)")
-
 def setup(bot):
   bot.add_cog(LeagueAPI(bot))
