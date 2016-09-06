@@ -1,9 +1,9 @@
 # enragedrobo
 ### A Discord bot using discord.py
 
-`README last updated 3/27/2016 at 3:19A.M. Eastern Standard Time`
+`README last updated 9/6/2016 at 1:43P.M. Eastern Standard Time`
 
-`Last major update: 3/27/2016 (see merged pull requests)`
+`Last major update: 8/11/2016 (see merged pull requests)`
 
 This is my personal bot for my Discord server(s). It is an improved version of an older project, [Priestism Bot](https://github.com/enragednuke/priestism_bot).
 
@@ -43,7 +43,7 @@ There are three `.example` files provided for the 3 json files you need to modif
 
 Make sure your bot is already connected to your server before trying to use it (it obviously won't work if it can't see your commands!)
 
-The files you do need to modify are as following:
+The files you do need to modify are as following (may be slightly out of date):
 
 #### data/admins.json
 ```py
