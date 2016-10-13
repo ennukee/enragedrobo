@@ -1,10 +1,6 @@
 # enragedrobo
 ### A Discord bot using discord.py
 
-`README last updated 9/6/2016 at 1:43P.M. Eastern Standard Time`
-
-`Last major update: 8/11/2016 (see merged pull requests)`
-
 This is my personal bot for my Discord server(s). It is an improved version of an older project, [Priestism Bot](https://github.com/enragednuke/priestism_bot).
 
 If you are simply looking to add enragedrobo to your server, please just use [this link](https://discordapp.com/oauth2/authorize?client_id=183740072011628544&scope=bot&permissions=84143104). It will include all permissions the bot will need for full functionality.
