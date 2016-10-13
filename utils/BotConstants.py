@@ -13,9 +13,9 @@ class BotConstants:
     self.bug_reports_channel_id = '200090197885452288'
     self.start_time = datetime.datetime.now()
     self.initial_extensions = [
-                                'modules.trivia',
+                               #'modules.trivia',
                                 'modules.leagueapi',
-                              # 'modules.botconfig',
+                                'modules.botconfig',
                                 'modules.dbd',
                                 'modules.cipher',
                                 'modules.cmd',

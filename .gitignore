@@ -6,6 +6,7 @@ data/apikeys.json
 data/login.json
 data/custom_commands/*
 data/league/champions/*
+data/command_ignores/*
 data/league/*
 realms/na.json
 data/music/*
