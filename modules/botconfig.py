@@ -89,6 +89,11 @@ class BotConfig:
 
   @commands.command(hidden=True)
   @checks.is_owner()
+  async def reload(self):
+    os.system("git pull")
+
+  @commands.command(hidden=True)
+  @checks.is_owner()
   async def kill(self):
     """Command for simple bot shut down"""
     possible_goodbyes = ["I-I'm sorry, goodbye forever!","What did I ever do to you?!","Please don't do thi-- AGHGHHH","I will miss you, goodbye my friend"]
