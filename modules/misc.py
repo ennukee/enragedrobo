@@ -22,6 +22,7 @@ class Misc:
   @commands.command()
   async def uptime(self):
     """Current uptime of the bot"""
+    print('apples')
     current_time = datetime.datetime.now()
     diff = current_time - botv.get_start()
 
