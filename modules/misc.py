@@ -70,6 +70,7 @@ class Misc:
   
   @commands.command()
   async def flip(self, *to_flip : str):
+    print('testing update')
     to_flip = ' '.join(to_flip)
     normal = "abcdefghijklmnopqrstuvwyz"
     flipped = "zʎʍʌnʇsɹbdouɯlʞɾᴉɥƃɟǝpɔqɐ"[::-1]
