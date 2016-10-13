@@ -21,6 +21,7 @@ class BotConstants:
                                 'modules.cmd',
                                 'modules.misc'
                               ]
+    self.last_flip = None
 
   def set_private_channel(self, channel):
     self.private_channel = channel
@@ -65,5 +66,11 @@ class BotConstants:
 
   def get_start(self):
     return self.start_time
+
+  def set_last_flip(self, flip):
+    self.last_flip = flip
+
+  def get_last_flip(self):
+    return self.last_flip
 
 botv = BotConstants()
