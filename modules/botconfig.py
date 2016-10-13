@@ -158,17 +158,5 @@ class BotConfig:
 
     await self.bot.say(output_form)
 
-  # @commands.command(pass_context=True)
-  # @checks.is_owner()
-  # async def channelkick(self, ctx):
-  #   """ Removes all users from the channel the typer is in """
-  #   if not ctx.message.author.voice_channel:
-  #     await self.bot.say('You are not in a voice channel')
-  #   elif not ctx.message.server.afk_channel:
-  #     await self.bot.say('Server must have an AFK channel to use this command')
-  #   else:
-  #     for person in ctx.message.author.voice_channel.voice_members:
-  #       await self.bot.move_member(person, ctx.message.server.afk_channel)
-
 def setup(bot):
   bot.add_cog(BotConfig(bot))

@@ -15,7 +15,7 @@ class BotConstants:
     self.initial_extensions = [
                                 'modules.trivia',
                                 'modules.leagueapi',
-                                'modules.botconfig',
+                              # 'modules.botconfig',
                                 'modules.dbd',
                                 'modules.cipher',
                                 'modules.cmd',
