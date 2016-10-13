@@ -279,7 +279,7 @@ async def commands(ctx):
   server_id = ctx.message.server.id
   server_cmd_dir = './data/custom_commands/{}'.format(server_id)
 
-  base_commands = "**For a full list of the global commands** the bot has to offer, please visit the bot's official website: http://enragednuke.github.io/bot.html\n"
+  base_commands = "**For a full list of the global commands** the bot has to offer, please visit the bot's official website: http://enragednuke.github.io/enragedrobo/\n"
 
   custom_commands = "**Server commands** (for the server you messaged from)\n\n"
   if os.path.isdir(server_cmd_dir) and len(os.listdir(server_cmd_dir))>0:
