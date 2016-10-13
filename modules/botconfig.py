@@ -41,7 +41,7 @@ class BotConfig:
         i = i.strip('`')
         try:
           imageloader.load_image(i)
-          await self.bot.edit_profile(load_credentials()['password'], avatar = open('avatar_folder/avatar.jpg', 'rb').read())
+          await self.bot.edit_profile(load_credentials()['token'], avatar = open('avatar_folder/avatar.jpg', 'rb').read())
         except urllib.error.HTTPError as e:
           await self.bot.say("There was an error getting your image.")
         except ValueError as e:
@@ -95,17 +95,68 @@ class BotConfig:
     await self.bot.say(random.choice(possible_goodbyes))
     sys.exit()
 
-  # @commands.command(pass_context=True)
-  # @checks.is_owner()
-  # async def channelkick(self, ctx):
-  #   """ Removes all users from the channel the typer is in """
-  #   if not ctx.message.author.voice_channel:
-  #     await self.bot.say('You are not in a voice channel')
-  #   elif not ctx.message.server.afk_channel:
-  #     await self.bot.say('Server must have an AFK channel to use this command')
-  #   else:
-  #     for person in ctx.message.author.voice_channel.voice_members:
-  #       await self.bot.move_member(person, ctx.message.server.afk_channel)
+  @commands.command(pass_context=True)
+  @checks.is_bot_mod()
+  async def ignore(self, ctx, cmd : str):
+    if cmd in ['ignore','unignore','ignored']:
+      await self.bot.say('You cannot ignore the `ignore`, `unignore` or `ignored` commands!')
+      return
+    ci_path = './data/command_ignores/channels/{}/'.format(ctx.message.channel.id)
+    with open(os.path.join(ci_path, cmd), 'w') as f:
+      f.write('1')
+
+    await self.bot.say('Command or feature is now ignored in this channel')
+
+  @commands.command(pass_context=True)
+  @checks.is_bot_mod()
+  async def unignore(self, ctx, cmd : str):
+    ci_path = './data/command_ignores/channels/{}/'.format(ctx.message.channel.id)
+    cmd_path = os.path.join(ci_path, cmd)
+
+    if os.path.exists(cmd_path):
+      os.remove(cmd_path)
+      await self.bot.say('That command is no longer ignored.')
+    else:
+      await self.bot.say('That command or feature is not ignored')
+
+  @commands.command(pass_context=True)
+  @checks.is_bot_mod()
+  async def serverignore(self, ctx, cmd : str):
+    swi_path = './data/command_ignores/servers/{}/'.format(ctx.message.server.id)
+    with open(os.path.join(swi_path, cmd), 'w') as f:
+      f.write('1')
+
+    await self.bot.say('Command or feature is now ignored on this server')
+
+  @commands.command(pass_context=True)
+  @checks.is_bot_mod()
+  async def serverunignore(self, ctx, cmd : str):
+    swi_path = './data/command_ignores/servers/{}/'.format(ctx.message.server.id)
+    cmd_path = os.path.join(swi_path, cmd)
+
+    if os.path.exists(cmd_path):
+      os.remove(cmd_path)
+      await self.bot.say('That command is no longer ignored on this server.')
+    else:
+      await self.bot.say('That command or feature is not ignored on this server')
+
+  @commands.command(pass_context=True)
+  async def ignored(self, ctx):
+    server_id, channel_id = ctx.message.server.id, ctx.message.channel.id
+    swi_path = './data/command_ignores/servers/{}/'.format(server_id)
+    ci_path = './data/command_ignores/channels/{}/'.format(channel_id)
+    gi_path = './data/command_ignores/GLOBAL/'
+
+    gi_cmds = [f for f in os.listdir(gi_path)]
+    output_form = "**Server-wide Ignored**\n{}\n\n**Channel-wide Ignored**\n{}"
+    if gi_cmds:
+      output_form = "**Globally Disabled Commands**\n{}\n\n".format('\n'.join(gi_cmds))
+
+    swi_cmds = '\n'.join([f for f in os.listdir(swi_path)])
+    ci_cmds = '\n'.join([f for f in os.listdir(ci_path)])
+    output_form = output_form.format(swi_cmds if swi_cmds else "None", ci_cmds if ci_cmds else "None")
+
+    await self.bot.say(output_form)
 
 def setup(bot):
   bot.add_cog(BotConfig(bot))

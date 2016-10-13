@@ -64,15 +64,46 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-  if message.author.id == botv.id:
+  # IDs
+  author_id, server_id, channel_id = message.author.id, message.server.id, message.channel.id
+
+  if author_id == bot.user.id:
     return
 
-  if message.content == "ayy":
-    await bot.send_message(message.channel, "lmao")
-  elif message.content == "o shit":
-    await bot.send_message(message.channel, "wadup")
-  elif message.content == "its":
-    await bot.send_message(message.channel, "dat boi")
+  swi_path = './data/command_ignores/servers/{}/'.format(server_id)
+  ci_path = './data/command_ignores/channels/{}/'.format(channel_id)
+
+  if not os.path.exists(swi_path):
+    os.makedirs(swi_path)
+  if not os.path.exists(ci_path):
+    os.makedirs(ci_path)
+
+  def extract_word(word):
+    if not word or word[0] != bot.command_prefix[0]:
+      return ''
+    return word.split()[0][1:]
+
+  invoker = extract_word(message.content)
+  server_wide_ignored = [f for f in os.listdir(swi_path)]
+  channel_ignored = [f for f in os.listdir(ci_path)]
+  ignored = server_wide_ignored + channel_ignored
+
+  print(invoker)
+  print(server_wide_ignored)
+  print(channel_ignored)
+
+  if invoker in ignored:
+    return
+
+  auto_responses = {
+    "ayy": "lmao",
+    "o shit": "wadup",
+    "its": "dat boi",
+    u"(╯°□°）╯︵ ┻━┻": u"#tablelivesmatter\n┬─┬﻿ ノ( ゜-゜ノ)",
+    "\\o\\": "/o/"
+    }
+  if message.content in auto_responses.keys():
+    await bot.send_message(message.channel, auto_responses[message.content])
 
   if message.content.startswith('BUG') and message.channel.is_private:
     bug_report = '<@{}>\nBug report by <@{}>: {}'
@@ -84,50 +115,52 @@ async def on_message(message):
 
     # MYANIMELIST MANGA AND ANIME SEARCH CODE #
 
-  # Link anime details by link #
-  animes = [x[0] for x in re.findall("\<(http://(www\.)?myanimelist.net/anime/\d+/?[A-Za-z\_\-(%20)]*)\>", message.content)]
-  end = []
-  for anime in animes[0:3]:
-    end.append('\n'.join(MAL_anime_info(anime)))
-  if end:
-    await bot.send_message(message.channel, '\n\n'.join(end))
+  if not 'anime' in ignored:
+    # Link anime details by link #
+    animes = [x[0] for x in re.findall("\<(http://(www\.)?myanimelist.net/anime/\d+/?[A-Za-z\_\-(%20)]*)\>", message.content)]
+    end = []
+    for anime in animes[0:3]:
+      end.append('\n'.join(MAL_anime_info(anime)))
+    if end:
+      await bot.send_message(message.channel, '\n\n'.join(end))
 
-  # Link manga details by link #
-  mangas = [x[0] for x in re.findall("\<(http://(www\.)?myanimelist.net/manga/\d+/?[A-Za-z\_\-(%20)]*)\>", message.content)]
-  end = []
-  for manga in mangas[0:3]:
-    end.append('\n'.join(MAL_manga_info(manga)))
-  if end:
-    await bot.send_message(message.channel, '\n\n'.join(end))
+    search_error = "There was an issue searching **{}**. It\'s likely that the title contains characters not supported by Discord/Python\'s basic text engine\n\nIf this is not the case, please send this bot a message starting with `BUG ` and report the issue! Thanks!"
+    # Link anime details by search query #
+    anime_search = re.findall('\<([\w\s^(http|www)]*)\>', message.content)
+    end = [] # resetting old array
+    for ani_s in anime_search[0:3]:
+      print(ani_s)
+      try:
+        result = MAL_anime_search(ani_s)
+        end.append('\n'.join(MAL_anime_info(result.get('href'))))
+      except Exception as e:
+        await bot.send_message(message.channel, search_error.format(ani_s))
+        continue
+    if end:
+      await bot.send_message(message.channel, '\n'.join(end))
 
-  search_error = "There was an issue searching **{}**. It\'s likely that the title contains characters not supported by Discord/Python\'s basic text engine\n\nIf this is not the case, please send this bot a message starting with `BUG ` and report the issue! Thanks!"
-  # Link anime details by search query #
-  anime_search = re.findall('\<([\w\s^(http|www)]*)\>', message.content)
-  end = [] # resetting old array
-  for ani_s in anime_search[0:3]:
-    print(ani_s)
-    try:
-      result = MAL_anime_search(ani_s)
-      end.append('\n'.join(MAL_anime_info(result.get('href'))))
-    except Exception as e:
-      await bot.send_message(message.channel, search_error.format(ani_s))
-      continue
-  if end:
-    await bot.send_message(message.channel, '\n'.join(end))
+  if not 'manga' in ignored:
+    # Link manga details by link #
+    mangas = [x[0] for x in re.findall("\<(http://(www\.)?myanimelist.net/manga/\d+/?[A-Za-z\_\-(%20)]*)\>", message.content)]
+    end = []
+    for manga in mangas[0:3]:
+      end.append('\n'.join(MAL_manga_info(manga)))
+    if end:
+      await bot.send_message(message.channel, '\n\n'.join(end))
 
-  # Link manga details by search query #
-  manga_search = re.findall('\[([\w\s^(http|www)]*)\]', message.content)
-  end = [] # resetting old array
-  for mang_s in manga_search[0:3]:
-    print(mang_s)
-    try:
-      result = MAL_manga_search(mang_s)
-      end.append('\n'.join(MAL_manga_info(result.get('href'))))
-    except Exception as e:
-      await bot.send_message(message.channel, search_error.format(mang_s))
-      continue
-  if end:
-    await bot.send_message(message.channel, '\n'.join(end))
+    # Link manga details by search query #
+    manga_search = re.findall('\[([\w\s^(http|www)]*)\]', message.content)
+    end = [] # resetting old array
+    for mang_s in manga_search[0:3]:
+      print(mang_s)
+      try:
+        result = MAL_manga_search(mang_s)
+        end.append('\n'.join(MAL_manga_info(result.get('href'))))
+      except Exception as e:
+        await bot.send_message(message.channel, search_error.format(mang_s))
+        continue
+    if end:
+      await bot.send_message(message.channel, '\n'.join(end))
 
   await bot.process_commands(message)
 
