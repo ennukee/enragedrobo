@@ -89,7 +89,7 @@ class BotConfig:
 
   @commands.command(hidden=True)
   @checks.is_owner()
-  async def reload(self):
+  async def update(self):
     os.system("git pull")
 
   @commands.command(hidden=True)
