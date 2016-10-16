@@ -19,7 +19,8 @@ class BotConstants:
                                 'modules.dbd',
                                 'modules.cipher',
                                 'modules.cmd',
-                                'modules.misc'
+                                'modules.misc',
+                                'modules.level'
                               ]
     self.last_flip = None
 
