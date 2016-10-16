@@ -16,6 +16,11 @@ import numpy as np # Advanced number/set arithmetic
 from _thread import *
 from bs4 import BeautifulSoup
 
+import sqlite3
+from PIL import Image
+from PIL import ImageFont
+from PIL import ImageDraw
+
 # - - My libraries - - #
 import checks # Ensures various predefined conditions are met
 from utils import imageloader # Image downloader
@@ -40,8 +45,10 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
+conn = sqlite3.connect('users.db')
+
 # - - Bot instantiation - - #
-bot = commands.Bot(command_prefix=['?'], description=description, pm_help=None, help_attrs=dict(hidden=True))
+bot = commands.Bot(command_prefix=['d?'], description=description, pm_help=None, help_attrs=dict(hidden=True))
 
 # - - Game constants - - #
 from utils.BotConstants import *
@@ -59,6 +66,7 @@ async def on_ready():
   for extension in botv.initial_extensions:
     try:
       bot.load_extension(extension)
+      print('Loaded extension {}'.format(extension))
     except Exception as e:
       print('Failed to load extension {}\n{}: {}'.format(extension, type(e).__name__, e))
 
@@ -95,15 +103,37 @@ async def on_message(message):
   if invoker in ignored:
     return
 
-  auto_responses = {
-    "ayy": "lmao",
-    "o shit": "wadup",
-    "its": "dat boi",
-    u"(╯°□°）╯︵ ┻━┻": u"#tablelivesmatter\n┬─┬﻿ ノ( ゜-゜ノ)",
-    "\\o\\": "/o/"
-    }
-  if message.content in auto_responses.keys():
-    await bot.send_message(message.channel, auto_responses[message.content])
+  if not 'level' in ignored and not message.channel.is_private:
+    c = conn.cursor()
+    user = c.execute('SELECT * FROM Users WHERE ID={} LIMIT 1'.format(author_id)).fetchone()
+    was_command = True if invoker else False
+    score_val = 10 if was_command else 5
+    if user is None:
+      c.execute('INSERT INTO Users(id, exp, level, score) VALUES({}, {}, {}, {})'.format(author_id, score_val, 1, score_val))
+      conn.commit()
+    else:
+      new_exp, new_score = user[2] + score_val, user[1] + score_val
+      level = user[3]
+      if new_exp > calculate_xp_for_lvl(level):
+        new_exp -= calculate_xp_for_lvl(level)
+        level += 1
+        await bot.send_message(message.channel, "**:up: | Level Up!**".format(author_id, level))
+        generate_level_up_image(level, message.author.avatar_url)
+        await bot.send_file(message.channel, './data/levelup/level_up.jpg')
+      c.execute('UPDATE Users SET exp = {}, level = {}, score = {} WHERE id = {}'.format(new_exp, level, new_score, author_id))
+      conn.commit()
+
+  if not 'auto_respond' in ignored:
+    auto_responses = {
+      "ayy": "lmao",
+      "o shit": "wadup",
+      "its": "dat boi",
+      u"(╯°□°）╯︵ ┻━┻": u"#tablelivesmatter\n┬─┬﻿ ノ( ゜-゜ノ)",
+      "\\o\\": "/o/",
+      "/o/": "\\o\\"
+      }
+    if message.content in auto_responses.keys():
+      await bot.send_message(message.channel, auto_responses[message.content])
 
   if message.content.startswith('BUG') and message.channel.is_private:
     bug_report = '<@{}>\nBug report by <@{}>: {}'
