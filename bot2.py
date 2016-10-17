@@ -118,6 +118,7 @@ async def on_message(message):
       # Anti-cheat detection
       cheated = False
       exp_gained = sum(calculate_xp_for_lvl(x) for x in range(1,level)) + user[2]
+      print("{} vs {}".format(exp_gained, user[1]))
       if exp_gained != user[1]:
         await bot.send_message(message.channel, '**Looks like <@{}> has been cheating...**\n(reset to level 1, speak to regain appropriate levels)')
         to_set_to = min(exp_gained, user[2])
