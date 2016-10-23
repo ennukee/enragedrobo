@@ -107,7 +107,7 @@ async def on_message(message):
     c = conn.cursor()
     user = c.execute('SELECT * FROM Users WHERE ID={} LIMIT 1'.format(author_id)).fetchone()
     was_command = True if invoker else False
-    score_val = 10 if was_command else 5
+    score_val = botv.command_xp if was_command else botv.message_xp
     if user is None:
       c.execute('INSERT INTO Users(id, exp, level, score) VALUES({}, {}, {}, {})'.format(author_id, score_val, 1, score_val))
       conn.commit()
