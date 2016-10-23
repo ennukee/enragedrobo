@@ -38,14 +38,16 @@ class LevelUp:
     level = int(user[3])
     s_score = user[1]
 
-    if level < 5:
+    if level < 10:
         await self.bot.say("You need to be **level 10** to use this!")
         return
 
     last_session = self.last_trained.get(author_id, None)
     time_since_last = (datetime.datetime.now() - last_session).total_seconds() if last_session else 100000
 
-    if not last_session or time_since_last > 1800:
+    WAIT_TIME = 3600
+
+    if not last_session or time_since_last > WAIT_TIME:
         self.last_trained[author_id] = datetime.datetime.now()
 
         events = ['You begin training...\n']
@@ -53,7 +55,7 @@ class LevelUp:
         exp_gain = level * 12
         global_multiplier = 1
         chance_of_occurring = 1.0
-        i = 2 if time_since_last > 3600 else 3
+        i = 2 if time_since_last > WAIT_TIME*2 else 3
         r = random.randint(1,i)
         while r == 1:
             event_poss = ['You feel great improvement', 'You recognize a new way to maximize your training', 'Your blade feels swifter than before', 'You dodge a quick foe']
@@ -99,7 +101,7 @@ class LevelUp:
 
             win_chance /= m_mult
             exp_for_winning = 0
-            win_perc = round(win_chance * 100, 5) if win_chance < 1 else 100
+            win_perc = round(win_chance * 100, 3) if win_chance < 1 else 100
             if random.random() < win_chance:
                 exp_for_winning = m_level * m_mult * global_multiplier
                 exp_gain += exp_for_winning
@@ -110,7 +112,7 @@ class LevelUp:
         
         exp_gain = int(exp_gain)
 
-        events.append('\nYou gain **{}** XP!'.format(exp_gain))
+        events.append('\nYou gained **{}** XP!'.format(exp_gain))
 
         await self.bot.say('\n'.join(events))
 
@@ -120,7 +122,7 @@ class LevelUp:
         conn.commit()
 
     else:
-        minutes_left = int((1800 - time_since_last)/60)
+        minutes_left = int((WAIT_TIME - time_since_last)/60)
         await self.bot.say('You are still too tired to train again, try again in {} minutes.'.format(minutes_left))
 
 
