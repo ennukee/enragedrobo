@@ -49,6 +49,10 @@ class BotConfig:
       await self.bot.delete_message(ctx.message)
     elif(setting == 'game'):
       await self.bot.change_status(discord.Game(name=' '.join(inp)))
+    elif(setting == 'message_xp'):
+      botv.message_xp = int(*inp)
+    elif(setting == 'command_xp'):
+      botv.command_xp = int(*inp)
     else:
       await getattr(self.bot, setting)(*inp)
 

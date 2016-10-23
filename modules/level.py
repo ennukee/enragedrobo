@@ -25,15 +25,40 @@ class LevelUp:
     self.bot = bot
 
   @commands.command(pass_context=True)
-  async def level(self, ctx):
+  async def level(self, ctx, mock = None):
     author_id = ctx.message.author.id
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
     user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
 
+    username = ctx.message.author.name
+    exp = user[2]
+    max_exp = calculate_xp_for_lvl(user[3])
+    level = int(user[3])
+    s_placing = 1 + c.execute("SELECT (select count(*) from Users as u2 where u2.score > u1.score) FROM Users as u1 WHERE id = {}".format(author_id)).fetchone()[0]
+    s_score = user[1]
+
+    if mock and mock.isdigit():
+        level = int(mock)
+        username = "EXAMPLE"
+
     # Image stuff
+    base = "./data/levelup/levelup_bg{}.jpg"
+    if level >= 25:
+        image_link = base.format('GE25')
+    elif level >= 15:
+        image_link = base.format('GE15')
+    elif level >= 10:
+        image_link = base.format('GE10')
+    elif level >= 5:
+        image_link = base.format('GE5')
+    elif level >= 2:
+        image_link = base.format('GE2')
+    else:
+        image_link = base.format('')
+
     th_size = 64, 64
-    img = Image.open("./data/levelup/levelup_bg.jpg")
+    img = Image.open(image_link)
     fd = requests.get(ctx.message.author.avatar_url)
     i_f = io.BytesIO(fd.content)
     avatar = Image.open(i_f)
@@ -48,14 +73,6 @@ class LevelUp:
     placing_font = ImageFont.truetype(font, 11)
     base_color = (60, 60, 70)
     exp_color = (190, 190, 200)
-
-    # Experimental variables
-    username = ctx.message.author.name
-    exp = user[2]
-    max_exp = calculate_xp_for_lvl(user[3])
-    level = user[3]
-    s_placing = 1 + c.execute("SELECT (select count(*) from Users as u2 where u2.score > u1.score) FROM Users as u1 WHERE id = {}".format(author_id)).fetchone()[0]
-    s_score = user[1]
 
     # Background filler
     draw.rectangle([74,8,292,92], fill=(255, 255, 255, 120))
@@ -90,7 +107,8 @@ class LevelUp:
 
     #draw.text((0,0),"Text Test",(255,255,255),font=font)
     img.save('./data/levelup/level-out.jpg')
-    await self.bot.send_message(ctx.message.channel, ":newspaper: | **{}'s Level Card**".format(username))
+    emoji = {'1': ':first_place:', '2': ':second_place:', '3': ':third_place:'}.get(str(s_placing), ':newspaper:')
+    await self.bot.send_message(ctx.message.channel, "{} | **{}'s Level Card**".format(emoji, username))
     await self.bot.send_file(ctx.message.channel, './data/levelup/level-out.jpg')
 
       

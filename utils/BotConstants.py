@@ -23,6 +23,8 @@ class BotConstants:
                                 'modules.level'
                               ]
     self.last_flip = None
+    self.message_xp = 5
+    self.command_xp = 10
 
   def set_private_channel(self, channel):
     self.private_channel = channel
