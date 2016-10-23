@@ -6,6 +6,8 @@ import sys, os # Lower-level operations libraries
 import urllib.request # Downloading
 import requests
 import random # Random (RNG)
+import datetime
+import numpy as np
 
 from PIL import Image
 from PIL import ImageFont
@@ -23,6 +25,104 @@ class LevelUp:
   """Holds all the logic for the bot's leveling system"""
   def __init__(self, bot):
     self.bot = bot
+    self.last_trained = {}
+
+  @commands.command(pass_context=True)
+  async def train(self, ctx):
+    author_id = ctx.message.author.id
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
+
+    exp = user[2]
+    level = int(user[3])
+    s_score = user[1]
+
+    if level < 5:
+        await self.bot.say("You need to be **level 10** to use this!")
+        return
+
+    last_session = self.last_trained.get(author_id, None)
+    time_since_last = (datetime.datetime.now() - last_session).total_seconds() if last_session else 100000
+
+    if not last_session or time_since_last > 1800:
+        self.last_trained[author_id] = datetime.datetime.now()
+
+        events = ['You begin training...\n']
+
+        exp_gain = level * 12
+        global_multiplier = 1
+        chance_of_occurring = 1.0
+        i = 2 if time_since_last > 3600 else 3
+        r = random.randint(1,i)
+        while r == 1:
+            event_poss = ['You feel great improvement', 'You recognize a new way to maximize your training', 'Your blade feels swifter than before', 'You dodge a quick foe']
+            event_chosen = random.choice(event_poss)
+
+            local_multiplier = random.randint(15,25) / 10
+            exp_gain *= local_multiplier
+            global_multiplier *= local_multiplier
+
+            chance_of_occurring /= float(i)
+            event_chosen += ' (Chance: **{}**%)'.format(round(chance_of_occurring*100, 3))
+            events.append(event_chosen)
+            i += 1
+            r = random.randint(1,i)
+        if chance_of_occurring == 1.0:
+            events.append('You didn\'t benefit much from basic training...')
+
+        events.append('\nYou begin fighting some monsters in the forest...')
+        num_encounters = random.randint(1, int(level / 3))
+        while num_encounters > 0:
+            m_level = random.randint(int(level / 2), level * 3)
+            monster_types = ['Peon', 'Soldier', 'Captain', 'General', 'King', 'God']
+            monster_mults = {
+                             'Peon': 0.25, 
+                             'Soldier': 1, 
+                             'Captain': 1.25, 
+                             'General': 2.0,
+                             'King': 20.0,
+                             'God': 100.0
+                            }
+            m_type = np.random.choice(monster_types, p=[0.15, 0.4, 0.25, 0.15, 0.04, 0.01])
+            m_mult = monster_mults[m_type]
+
+            player_stronger = level > m_level
+            level_diff = abs(level - m_level)
+            win_chance = 0.5
+            if player_stronger:
+                win_chance = 0.5 + (1/2) * pow(1 / (level / 2), 2) * pow(level_diff, 2)
+            elif level_diff == 0:
+                win_chance = 0.5
+            else:
+                win_chance = 0.5 + (-1/2) * pow(1 / (level * 2), 2) * pow(level_diff, 2)
+
+            win_chance /= m_mult
+            exp_for_winning = 0
+            win_perc = round(win_chance * 100, 5) if win_chance < 1 else 100
+            if random.random() < win_chance:
+                exp_for_winning = m_level * m_mult * global_multiplier
+                exp_gain += exp_for_winning
+                events.append('You *beat* a Lv. **{}** **{}** (EXP: +**{}**) (Chance: **{}%**)'.format(m_level, m_type, exp_for_winning, win_perc))
+            else:
+                events.append('You *lost* to a Lv. **{}** **{}** (Chance: **{}%**)'.format(m_level, m_type, win_perc))
+            num_encounters -= 1
+        
+        exp_gain = int(exp_gain)
+
+        events.append('\nYou gain **{}** XP!'.format(exp_gain))
+
+        await self.bot.say('\n'.join(events))
+
+        new_exp = exp + exp_gain
+        new_score = s_score + exp_gain
+        c.execute('UPDATE Users SET exp = {}, score = {} WHERE id = {}'.format(new_exp, new_score, author_id))
+        conn.commit()
+
+    else:
+        minutes_left = int((1800 - time_since_last)/60)
+        await self.bot.say('You are still too tired to train again, try again in {} minutes.'.format(minutes_left))
+
 
   @commands.command(pass_context=True)
   async def level(self, ctx, mock = None):

@@ -96,6 +96,8 @@ async def on_message(message):
   channel_ignored = [f for f in os.listdir(ci_path)]
   ignored = server_wide_ignored + channel_ignored
 
+  no_xp_for_command = ['level', 'train']
+
   print(invoker)
   print(server_wide_ignored)
   print(channel_ignored)
@@ -103,7 +105,7 @@ async def on_message(message):
   if invoker in ignored:
     return
 
-  if not 'level' in ignored and not message.channel.is_private:
+  if not 'level' in ignored and not message.channel.is_private and not invoker in no_xp_for_command:
     c = conn.cursor()
     user = c.execute('SELECT * FROM Users WHERE ID={} LIMIT 1'.format(author_id)).fetchone()
     was_command = True if invoker else False
