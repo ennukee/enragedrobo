@@ -108,8 +108,7 @@ async def on_message(message):
   if not 'level' in ignored and not message.channel.is_private and not invoker in no_xp_for_command:
     c = conn.cursor()
     user = c.execute('SELECT * FROM Users WHERE ID={} LIMIT 1'.format(author_id)).fetchone()
-    was_command = True if invoker else False
-    score_val = botv.command_xp if was_command else botv.message_xp
+    score_val = botv.message_xp
     if user is None:
       c.execute('INSERT INTO Users(id, exp, level, score) VALUES({}, {}, {}, {})'.format(author_id, score_val, 1, score_val))
       conn.commit()
