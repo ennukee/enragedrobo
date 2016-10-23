@@ -38,7 +38,7 @@ class LevelUp:
     level = int(user[3])
     s_score = user[1]
 
-    if level < 10:
+    if level < 5:
         await self.bot.say("You need to be **level 10** to use this!")
         return
 
