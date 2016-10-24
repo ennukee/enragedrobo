@@ -29,6 +29,19 @@ class LevelUp:
     self.last_saved = {}
 
   @commands.command(pass_context=True)
+  async def grace(self, ctx):
+    SAVE_TIME = 7200
+
+    recently_saved = self.last_saved.get(author_id, None)
+    time_since_last = (datetime.datetime.now() - recently_saved).total_seconds() if recently_saved else 100000
+
+    if time_since_last > 7200:
+        await self.bot.say('The **Grace of Light** is at your side')
+    else:
+        mins_left = (7200 - time_since_last)/60
+        await self.bot.say('The **Grace of Light** can save you again in {} minutes.'.format(mins_left))
+
+  @commands.command(pass_context=True)
   async def gamble(self, ctx, offer : int):
     author_id = ctx.message.author.id
     conn = sqlite3.connect('users.db')
