@@ -30,6 +30,7 @@ class LevelUp:
 
   @commands.command(pass_context=True)
   async def grace(self, ctx):
+    author_id = ctx.message.author.id
     SAVE_TIME = 7200
 
     recently_saved = self.last_saved.get(author_id, None)
