@@ -66,7 +66,7 @@ class LevelUp:
     # 2.50% -> Boss fight
 
     options = ['lose', 'keep', 'double', 'level', 'reset_training', 'boss'] 
-    result = 'boss'#np.random.choice(options, p = [0.4, 0.3, 0.125, 0.05, 0.1, 0.025])
+    result = np.random.choice(options, p = [0.4, 0.3, 0.125, 0.05, 0.1, 0.025])
 
     if result == 'lose':
         recently_saved = self.last_saved.get(author_id, None)
@@ -120,7 +120,7 @@ class LevelUp:
                 'Tishlaveer': ['F', 'G', 'D', 'F', 'G', 'D', 'S'],
                 'Autrobeen': ['S', 'F', 'D', 'A', 'D', 'A', 'A']
             }
-            chosen_boss = 'Chromus'#random.choice(bosses)
+            chosen_boss = random.choice(bosses)
             b_level = random.randint(level * 4, level * 5)
 
             events = []
