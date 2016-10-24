@@ -24,6 +24,7 @@ class BotConstants:
                               ]
     self.last_flip = None
     self.message_xp = 5
+    self.last_message = {}
 
   def set_private_channel(self, channel):
     self.private_channel = channel
