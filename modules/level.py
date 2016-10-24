@@ -26,6 +26,218 @@ class LevelUp:
   def __init__(self, bot):
     self.bot = bot
     self.last_trained = {}
+    self.last_saved = {}
+
+  @commands.command(pass_context=True)
+  async def gamble(self, ctx, offer : int):
+    author_id = ctx.message.author.id
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
+
+    offer = int(offer)
+
+    exp = user[2]
+    level = int(user[3])
+    s_score = user[1]
+    max_exp = calculate_xp_for_lvl(level)
+
+    new_exp = exp
+    new_score = s_score
+
+    SAVE_TIME = 7200
+
+    if level < 5:
+        await self.bot.say("You need to be **level 5** to use this!")
+        return
+    elif exp < offer:
+        await self.bot.say('You do not have that much XP to offer')
+        return
+    elif offer < max_exp / 8:
+        await self.bot.say('You need to offer at least one eighth of your level ({})'.format(max_exp / 8))
+        return
+
+    # Chances
+    # 40.0% -> Lose XP
+    # 30.0% -> Keep XP
+    # 12.5% -> Double XP
+    # 5.00% -> Instant level
+    # 10.0% -> Reset training
+    # 2.50% -> Boss fight
+
+    options = ['lose', 'keep', 'double', 'level', 'reset_training', 'boss'] 
+    result = 'boss'#np.random.choice(options, p = [0.4, 0.3, 0.125, 0.05, 0.1, 0.025])
+
+    if result == 'lose':
+        recently_saved = self.last_saved.get(author_id, None)
+        time_since_last = (datetime.datetime.now() - recently_saved).total_seconds() if recently_saved else 100000
+
+        if time_since_last > SAVE_TIME:
+            self.last_saved[author_id] = datetime.datetime.now()
+            await self.bot.say('You would have lost offering, but the Grace of Light has saved it. You cannot be saved for another two hours.')
+        else:
+            await self.bot.say('Unfortunately, the black magic steals away part of you. You lose the offering.')
+            new_exp -= offer
+            new_score -= offer
+    elif result == 'keep':
+        await self.bot.say('You feel the black magic simply pass by.')
+    elif result == 'double':
+        new_exp += offer
+        new_score += offer
+        await self.bot.say('You feel the black magic grace you with a gift. You gain back your offering and more.')
+    elif result == 'level':
+        await self.bot.say('The black magic courses through you. You gain a level.')
+        new_exp += (max_exp - exp)
+        new_score += (max_exp - exp)
+    elif result == 'reset_training':
+        if offer < max_exp / 4:
+            await self.bot.say('You feel slightly refreshed, but the offering was not enough to fully refresh you.\n(Sacrifice at least a fourth of a level to unlock this result)')
+        else:
+            await self.bot.say('The black magic refreshes you. You can use ?train again.')
+            self.last_trained[author_id] = None
+    elif result == 'boss':
+        await self.bot.say('You feel the presence of a very dangerous being. Do you continue? (Y/N)')
+
+        def valid(msg):
+            return msg.content.lower() in ['y','n']
+        msg = await self.bot.wait_for_message(timeout=30, author=ctx.message.author, check=valid)
+
+        if msg and msg.content.lower() == 'y':
+            bosses = ['Chromus', 'Al\'sharah', 'Venomancer', 'Tishlaveer', 'Autrobeen']
+            boss_descriptions = {
+                'Chromus': 'A being of massive arcane power. His defensive power is overwhelming but has very long wind-up time for his attacks.',
+                'Al\'sharah': 'A vicious jungle-dweller. His attacks are ruthless and is an extremely impatient being.',
+                'Venomancer': 'Large, crystalline scorpion. Deals damage constantly to anyone nearby. Weak shell.',
+                'Tishlaveer': 'A mana-starved being. Will resort to anything to draw mana from his foes. Will wither and die if left alone.',
+                'Autrobeen': 'The brother of Chromus. An imperial soldier from the celestial realm. Extremely by-the-books fighter.'
+            }
+
+            # Don't care to hide it, tbh
+            valid_moves = {
+                'Chromus': ['S', 'S', 'S', 'B', 'S', 'S', 'S'],
+                'Al\'sharah': ['F', 'B', 'B', 'F', 'C', 'B', 'C'],
+                'Venomancer': ['F', 'F', 'F', 'F', 'S', 'S', 'S'],
+                'Tishlaveer': ['F', 'G', 'D', 'F', 'G', 'D', 'S'],
+                'Autrobeen': ['S', 'F', 'D', 'A', 'D', 'A', 'A']
+            }
+            chosen_boss = 'Chromus'#random.choice(bosses)
+            b_level = random.randint(level * 4, level * 5)
+
+            events = []
+            events.append(':exclamation: **You find a Level {} {}** :exclamation:'.format(b_level, chosen_boss))
+            events.append(boss_descriptions[chosen_boss])
+            events.append('\nChoose a sequence of seven actions and put them in one message. You have **60 seconds**. The choices are:')
+            events.append('**A** - Attack the enemy')
+            events.append('**D** - Raise a defense')
+            events.append('**S** - Savagely attack the opponent, focusing solely on damage')
+            events.append('**B** - Bolster a monstrous defense, focusing only on defending the incoming attack')
+            events.append('**F** - Flee from the enemy, backing away a large distance')
+            events.append('**G** - Dodge an incoming attack')
+            events.append('**C** - Attempt to counter an incoming attack')
+            events.append('There is only **one** successful combination of moves.')
+
+            await self.bot.say('\n'.join(events))
+            events = ['**Result of the battle...**\n']
+
+            def move_check(msg):
+                return all(x in 'ADSBFDC' for x in msg.content) and len(msg.content) == 7
+            msg = await self.bot.wait_for_message(timeout=60, author=ctx.message.author, check=move_check)
+            if msg is None:
+                await self.bot.say('The being escapes your potential attack. (Time up!)')
+                return
+
+            moveset = valid_moves[chosen_boss]
+            correct_moves = 0
+
+            def move(m, msg, moveset, correct_moves, c_msg, sc, sc_msg, wrong):
+                if msg.content[m] == moveset[m]:
+                    events.append(":white_check_mark: | " + c_msg)
+                    return correct_moves + 1
+                elif msg.content[m] == sc:
+                    events.append(":ok: | " + sc_msg)
+                else:
+                    events.append(":x: | " + wrong)
+                return correct_moves
+
+            m = 0
+            if chosen_boss == 'Chromus':
+                # MOVE 1
+                correct_moves = move(m, msg, moveset, correct_moves,
+                    'You savagely strike at the arcane being. He is too busy charging to defend.', 
+                    'A', 
+                    'A basic attack doesn\'t seem to affect him much...', 
+                    'The being simply charges his power...')
+                m += 1
+
+                # MOVE 2
+                correct_moves = move(m, msg, moveset, correct_moves,
+                    'You savagely strike at the arcane being. He is too busy charging to defend.', 
+                    'A', 
+                    'A basic attack doesn\'t seem to affect him much...', 
+                    'The being simply charges his power...')
+                m += 1
+
+                # MOVE 3
+                correct_moves = move(m, msg, moveset, correct_moves,
+                    'You savagely strike at the arcane being. He looks like he is about to strike.', 
+                    'A', 
+                    'A basic attack doesn\'t seem to affect him much, but you can tell he is about to strike next', 
+                    'The being simply charges his power. He is about to release his power.')
+                m += 1
+
+                # MOVE 4
+                correct_moves = move(m, msg, moveset, correct_moves,
+                    'You bolster the strongest defense you can and take the brunt of his massive attack successfully',
+                    'D', 
+                    'The attack overwhelms your defenses and inflicts severe mana burns',
+                    'The being releases an overwhelmingly powerful attack that strikes everywhere in the area. You sustain severe mana burns.')
+                m += 1
+
+                # MOVE 5
+                correct_moves = move(m, msg, moveset, correct_moves,
+                    'You savagely strike at the arcane being. He is too busy charging to defend.', 
+                    'A', 
+                    'A basic attack doesn\'t seem to affect him much...', 
+                    'The being simply charges his power...')
+                m += 1
+
+                # MOVE 6
+                correct_moves = move(m, msg, moveset, correct_moves,
+                    'You savagely strike at the arcane being. He is too busy charging to defend.', 
+                    'A', 
+                    'A basic attack doesn\'t seem to affect him much... He looks to be trying to retreat', 
+                    'The being simply charges his power... but he looks scared now')
+                m += 1
+
+                # MOVE 7
+                correct_moves = move(m, msg, moveset, correct_moves,
+                    'You savagely strike at the arcane being. He falls to the ground, defeated', 
+                    'A', 
+                    'A basic attack doesn\'t seem to affect him much. He is able to channel enough energy to teleport away', 
+                    'The being teleports away')
+                m += 1
+
+            elif chosen_boss == 'Al\'sharah':
+                print('PH')
+            elif chosen_boss == 'Venomancer':
+                print('PH')
+            elif chosen_boss == 'Tishlaveer':
+                print('PH')
+            elif chosen_boss == 'Autrobeen':
+                print('PH')
+
+            events.append('\n**Correct Moves:** {}'.format(correct_moves))
+            events.append('**EXP Gained**: {}'.format(level * 10 * correct_moves))
+            new_exp += level * 10 * correct_moves
+            new_score += level * 10 * correct_moves
+            await self.bot.say('\n'.join(events))
+
+        else:  
+            await self.bot.say('Probably a wise choice...')
+
+    c.execute('UPDATE Users SET exp = {}, score = {} WHERE id = {}'.format(new_exp, new_score, author_id))
+    conn.commit()
+
 
   @commands.command(pass_context=True)
   async def train(self, ctx):
@@ -39,7 +251,7 @@ class LevelUp:
     s_score = user[1]
 
     if level < 5:
-        await self.bot.say("You need to be **level 10** to use this!")
+        await self.bot.say("You need to be **level 5** to use this!")
         return
 
     last_session = self.last_trained.get(author_id, None)
