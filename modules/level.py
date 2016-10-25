@@ -382,7 +382,7 @@ class LevelUp:
             return
 
     try:
-        imageloader.load_background(img, author_id)
+        load_background(img, author_id)
     except ValueError as e:
         await self.bot.say('The image link was invalid')
     except urllib.error.HTTPError as e:
