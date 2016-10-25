@@ -18,9 +18,9 @@ import io
 
 # - - My libraries - - #
 import checks # Ensures various predefined conditions are met
-from utils.imageloader import * # Image downloader
 from utils.BasicUtility import *
 from utils.BotConstants import *
+from utils import imageloader # Image downloader
 
 class LevelUp:
   """Holds all the logic for the bot's leveling system"""
@@ -382,11 +382,13 @@ class LevelUp:
             return
 
     try:
-        load_background(img, author_id)
+        imageloader.load_background(img, author_id)
     except ValueError as e:
         await self.bot.say('The image link was invalid')
     except urllib.error.HTTPError as e:
         await self.bot.say('The requested image denied me :frowning:. Consider reuploading it to a source like imgur.')
+    except Exception as e:
+        await self.bot.say('Something went wrong during processing.\n{}: {}'.format(type(e).__name__, e))
 
     img = Image.open(custom_img)
     th_size = 300, 100
