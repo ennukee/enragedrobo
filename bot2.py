@@ -48,7 +48,7 @@ logger.addHandler(handler)
 conn = sqlite3.connect('users.db')
 
 # - - Bot instantiation - - #
-bot = commands.Bot(command_prefix=['='], description=description, pm_help=None, help_attrs=dict(hidden=True))
+bot = commands.Bot(command_prefix=['?'], description=description, pm_help=None, help_attrs=dict(hidden=True))
 
 # - - Game constants - - #
 from utils.BotConstants import *
