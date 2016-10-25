@@ -14,6 +14,11 @@ def load_image(url):
 		raise ValueError("The provided url was improper by Django standards", "url")
 	urllib.request.urlretrieve(url, "avatar_folder/avatar.jpg")
 
+def load_background(url, id):
+	if regex.match(url) == None:
+		raise ValueError("The provided url was improper by Django standards", "url")
+	urllib.request.urlretrieve(url, "data/levelup/users/levelup_bg_{}.jpg".format(id))
+
 def load_splash_art(champ, skin_num, valid):
 	if champ in valid:
 		try:

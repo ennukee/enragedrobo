@@ -4,6 +4,7 @@ import discord # Overall discord library
 import json, asyncio # json / asyncio libraries
 import sys, os # Lower-level operations libraries
 import urllib.request # Downloading
+import urllib
 import requests
 import random # Random (RNG)
 import datetime
@@ -27,19 +28,20 @@ class LevelUp:
     self.bot = bot
     self.last_trained = {}
     self.last_saved = {}
+    self.gamble_lock = {}
+    self.lock_timers = {'save': 7200, 'gamble': 300}
 
   @commands.command(pass_context=True)
   async def grace(self, ctx):
     author_id = ctx.message.author.id
-    SAVE_TIME = 7200
 
     recently_saved = self.last_saved.get(author_id, None)
     time_since_last = (datetime.datetime.now() - recently_saved).total_seconds() if recently_saved else 100000
 
-    if time_since_last > 7200:
+    if time_since_last > self.lock_timers['save']:
         await self.bot.say('The **Grace of Light** is at your side')
     else:
-        mins_left = (7200 - time_since_last)/60
+        mins_left = int((self.lock_timers['save'] - time_since_last)/60)
         await self.bot.say('The **Grace of Light** can save you again in {} minutes.'.format(mins_left))
 
   @commands.command(pass_context=True)
@@ -59,10 +61,15 @@ class LevelUp:
     new_exp = exp
     new_score = s_score
 
-    SAVE_TIME = 7200
+    gamble_lock = self.gamble_lock.get(author_id, None)
+    since_gamble_lock = (datetime.datetime.now() - gamble_lock).total_seconds() if gamble_lock else 100000
 
     if level < 5:
         await self.bot.say("You need to be **level 5** to use this!")
+        return
+    elif since_gamble_lock < self.lock_timers['gamble']:
+        mins_left = int((self.lock_timers['gamble'] - since_gamble_lock)/60)
+        await self.bot.say('You are too afraid to attempt to gamble yet. Try again in {} minutes.'.format(mins_left))
         return
     elif exp < offer:
         await self.bot.say('You do not have that much XP to offer')
@@ -71,30 +78,33 @@ class LevelUp:
         await self.bot.say('You need to offer at least one eighth of your level ({})'.format(max_exp / 8))
         return
 
+    self.gamble_lock[author_id] = None
+
     # Chances
-    # 40.0% -> Lose XP
-    # 30.0% -> Keep XP
+    # 42.5% -> Lose XP
+    # 30.0% -> Locked
     # 12.5% -> Double XP
-    # 5.00% -> Instant level
+    # 2.50% -> Instant level
     # 10.0% -> Reset training
     # 2.50% -> Boss fight
 
-    options = ['lose', 'keep', 'double', 'level', 'reset_training', 'boss'] 
-    result = np.random.choice(options, p = [0.4, 0.3, 0.125, 0.05, 0.1, 0.025])
+    options = ['lose', 'lock', 'double', 'level', 'reset_training', 'boss'] 
+    result = np.random.choice(options, p = [0.425, 0.3, 0.125, 0.025, 0.1, 0.025])
 
     if result == 'lose':
         recently_saved = self.last_saved.get(author_id, None)
         time_since_last = (datetime.datetime.now() - recently_saved).total_seconds() if recently_saved else 100000
 
-        if time_since_last > SAVE_TIME:
+        if time_since_last > self.lock_timers['save']:
             self.last_saved[author_id] = datetime.datetime.now()
             await self.bot.say('You would have lost offering, but the Grace of Light has saved it. You cannot be saved for another two hours.')
         else:
             await self.bot.say('Unfortunately, the black magic steals away part of you. You lose the offering.')
             new_exp -= offer
             new_score -= offer
-    elif result == 'keep':
-        await self.bot.say('You feel the black magic simply pass by.')
+    elif result == 'lock':
+        await self.bot.say('You feel the dark magic choke you. You do not dare try again for **5 minutes**')
+        self.gamble_lock[author_id] = datetime.datetime.now()
     elif result == 'double':
         new_exp += offer
         new_score += offer
@@ -351,6 +361,44 @@ class LevelUp:
         minutes_left = int((WAIT_TIME - time_since_last)/60)
         await self.bot.say('You are still too tired to train again, try again in {} minutes.'.format(minutes_left))
 
+  @commands.command(pass_context=True)
+  async def setbg(self, ctx, img):
+    author_id = ctx.message.author.id
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
+
+    if int(user[3]) < 25:
+        await self.bot.say('You must be level **25** to set custom backgrounds!')
+        return
+
+    custom_img = './data/levelup/users/levelup_bg_{}.jpg'.format(author_id)
+    if img in [None, "None"]:
+        if os.path.isfile(custom_img):
+            os.remove(custom_img)
+            return
+        else:
+            await self.bot.say('You do not have a custom background')
+            return
+
+    try:
+        imageloader.load_background(img, author_id)
+    except ValueError as e:
+        await self.bot.say('The image link was invalid')
+    except urllib.error.HTTPError as e:
+        await self.bot.say('The requested image denied me :frowning:. Consider reuploading it to a source like imgur.')
+
+    img = Image.open(custom_img)
+    th_size = 300, 100
+    draw = ImageDraw.Draw(img, 'RGBA')
+
+    w, h = img.size
+
+    new_dim = 320, int(h / (w / 300))
+    img_resize = img.resize(new_dim, Image.ANTIALIAS)
+    img_cropped = img_resize.crop((0,0,300,100))
+    img_cropped.save('./data/levelup/users/levelup_bg_{}.jpg'.format(author_id))
+
 
   @commands.command(pass_context=True)
   async def level(self, ctx, mock = None):
@@ -372,8 +420,8 @@ class LevelUp:
 
     # Image stuff
     base = "./data/levelup/levelup_bg{}.jpg"
-    if level >= 25:
-        image_link = base.format('GE25')
+    if level >= 20:
+        image_link = base.format('GE20')
     elif level >= 15:
         image_link = base.format('GE15')
     elif level >= 10:
@@ -384,6 +432,11 @@ class LevelUp:
         image_link = base.format('GE2')
     else:
         image_link = base.format('')
+
+    custom_img = './data/levelup/users/levelup_bg_{}.jpg'.format(author_id)
+    print(custom_img)
+    if os.path.isfile(custom_img):
+        image_link = custom_img
 
     th_size = 64, 64
     img = Image.open(image_link)
@@ -403,7 +456,7 @@ class LevelUp:
     exp_color = (190, 190, 200)
 
     # Background filler
-    draw.rectangle([74,8,292,92], fill=(255, 255, 255, 120))
+    draw.rectangle([74,8,292,92], fill=(255, 255, 255, 180))
 
     # Avatar background filler
     draw.rectangle([27,15,97,85], fill=(0,0,0,50))
