@@ -368,7 +368,7 @@ class LevelUp:
     c = conn.cursor()
     user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
 
-    if int(user[3]) < 10:
+    if int(user[3]) < 25:
         await self.bot.say('You must be level **25** to set custom backgrounds!')
         return
 
@@ -458,7 +458,7 @@ class LevelUp:
     exp_color = (190, 190, 200)
 
     # Background filler
-    draw.rectangle([74,8,292,92], fill=(255, 255, 255, 180))
+    draw.rectangle([74,8,292,92], fill=(255, 255, 255, 150))
 
     # Avatar background filler
     draw.rectangle([27,15,97,85], fill=(0,0,0,50))
