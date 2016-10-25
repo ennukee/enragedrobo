@@ -18,7 +18,7 @@ import io
 
 # - - My libraries - - #
 import checks # Ensures various predefined conditions are met
-from utils import imageloader # Image downloader
+from utils.imageloader import * # Image downloader
 from utils.BasicUtility import *
 from utils.BotConstants import *
 
