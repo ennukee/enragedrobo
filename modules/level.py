@@ -368,7 +368,7 @@ class LevelUp:
     c = conn.cursor()
     user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
 
-    if int(user[3]) < 25:
+    if int(user[3]) < 10:
         await self.bot.say('You must be level **25** to set custom backgrounds!')
         return
 
