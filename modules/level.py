@@ -33,7 +33,29 @@ class LevelUp:
     self.pot_active_channels = {}
 
   @commands.command(pass_context=True)
+  async def lookup(self, ctx):
+    ments = ctx.message.mentions
+    if len(ments) >= 1:
+        usr = ments[0]
+        u_id = usr[2:-1]
+
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        user = c.execute('SELECT * FROM Users WHERE id = {}'.format(u_id)).fetchone()
+
+        if user:
+            exp = user[2]
+            level = int(user[3])
+            s_score = user[1]
+            max_exp = calculate_xp_for_lvl(level)
+            await self.bot.say('<@{}>\nLevel **{}**\nEXP: {}\{}\nScore: {}'.format(u_id, exp, max_exp, s_score))
+
+
+
+  @commands.command(pass_context=True)
   async def pot(self, ctx, cap : int):
+    return
+
     if self.pot_active_channels.get(ctx.message.channel.id, None):
         await self.bot.say('A pot is already active in this channel!')
     players = []
@@ -41,12 +63,6 @@ class LevelUp:
     author_id = ctx.message.author.id
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-
-    # user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
-    # exp = user[2]
-    # level = int(user[3])
-    # s_score = user[1]
-    # max_exp = calculate_xp_for_lvl(level)
 
     await self.bot.say('**{}** has opened a pot of **{}**\nType \'in\' to join!'.format(ctx.message.author.name, cap))
     self.pot_active_channels[ctx.message.channel.id] = '1'
