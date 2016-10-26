@@ -37,7 +37,6 @@ class LevelUp:
     ments = ctx.message.mentions
     if len(ments) >= 1:
         u_id = ments[0].id
-        # u_id = usr[2:-1]
 
         conn = sqlite3.connect('users.db')
         c = conn.cursor()
@@ -54,8 +53,6 @@ class LevelUp:
 
   @commands.command(pass_context=True)
   async def pot(self, ctx, cap : int):
-    return
-
     if self.pot_active_channels.get(ctx.message.channel.id, None):
         await self.bot.say('A pot is already active in this channel!')
     players = []
@@ -71,7 +68,7 @@ class LevelUp:
         return msg.content.lower() == 'in'
 
     start_time = datetime.datetime.now()
-    while (datetime.datetime.now() - start_time).total_seconds < self.lock_timers['pot']:
+    while (datetime.datetime.now() - start_time).total_seconds() < self.lock_timers['pot']:
         msg = await self.bot.wait_for_message(timeout=5, check=check)
         if msg is not None:
             a_id = msg.author.id
@@ -169,15 +166,15 @@ class LevelUp:
     self.gamble_lock[author_id] = None
 
     # Chances
-    # 42.5% -> Lose XP
+    # 40.0% -> Lose XP
     # 30.0% -> Locked
-    # 12.5% -> Double XP
-    # 2.50% -> Instant level
+    # 7.5-% -> Double XP
+    # 10.0% -> Instant level
     # 10.0% -> Reset training
     # 2.50% -> Boss fight
 
     options = ['lose', 'lock', 'double', 'level', 'reset_training', 'boss'] 
-    result = np.random.choice(options, p = [0.425, 0.3, 0.125, 0.025, 0.1, 0.025])
+    result = np.random.choice(options, p = [0.40, 0.3, 0.075, 0.1, 0.1, 0.025])
 
     if result == 'lose':
         recently_saved = self.last_saved.get(author_id, None)
@@ -191,16 +188,16 @@ class LevelUp:
             new_exp -= offer
             new_score -= offer
     elif result == 'lock':
-        await self.bot.say('You feel the dark magic choke you. You do not dare try again for **5 minutes**')
+        await self.bot.say('You feel the dark magic choke you. You do not dare try again for **2 minutes**')
         self.gamble_lock[author_id] = datetime.datetime.now()
     elif result == 'double':
         new_exp += offer
         new_score += offer
         await self.bot.say('You feel the black magic grace you with a gift. You gain back your offering and more.')
     elif result == 'level':
-        await self.bot.say('The black magic courses through you. You gain a level.')
-        new_exp += (max_exp - exp)
-        new_score += (max_exp - exp)
+        await self.bot.say('The black magic courses through you. You gain a portion of your remaining level.')
+        new_exp += int((max_exp - exp) * random.random())
+        new_score += int((max_exp - exp) * random.random())
     elif result == 'reset_training':
         if offer < max_exp / 4:
             await self.bot.say('You feel slightly refreshed, but the offering was not enough to fully refresh you.\n(Sacrifice at least a fourth of a level to unlock this result)')
