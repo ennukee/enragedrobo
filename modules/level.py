@@ -36,8 +36,8 @@ class LevelUp:
   async def lookup(self, ctx):
     ments = ctx.message.mentions
     if len(ments) >= 1:
-        usr = ments[0]
-        u_id = usr[2:-1]
+        u_id = ments[0].id
+        # u_id = usr[2:-1]
 
         conn = sqlite3.connect('users.db')
         c = conn.cursor()
