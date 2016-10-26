@@ -78,7 +78,7 @@ class LevelUp:
             exp = user[2]
             if exp < cap:
                 await self.bot.say('You don\'t have enough exp to enter this pot (required: **{}**)'.format(pot))
-            else:
+            elif a_id not in players:
                 await self.bot.say('Player <@{}> registered'.format(a_id))
                 players.append(a_id)
         cur_time = datetime.datetime.now()
