@@ -29,7 +29,71 @@ class LevelUp:
     self.last_trained = {}
     self.last_saved = {}
     self.gamble_lock = {}
-    self.lock_timers = {'save': 7200, 'gamble': 300}
+    self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 60}
+
+  @commands.command(pass_context=True)
+  async def pot(self, ctx, cap : int):
+    players = []
+
+    author_id = ctx.message.author.id
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+
+    # user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
+    # exp = user[2]
+    # level = int(user[3])
+    # s_score = user[1]
+    # max_exp = calculate_xp_for_lvl(level)
+
+    await self.bot.say('**{}** has opened a pot of **{}**'.format(ctx.message.author.name, cap))
+
+    def check(msg):
+        return msg.content.lower() == 'in'
+
+    start_time = datetime.datetime.now()
+    while (datetime.datetime.now() - start_time).total_seconds < self.lock_timers['pot']:
+        msg = await self.bot.wait_for_message(timeout=5, check=check)
+        if msg is not None:
+            a_id = msg.author.id
+            user = c.execute('SELECT * FROM Users WHERE id = {}'.format(a_id)).fetchone()
+            exp = user[2]
+            if exp < cap:
+                await self.bot.say('You don\'t have enough exp to enter this pot (required: **{}**)'.format(pot))
+            else:
+                players.append(a_id)
+
+    if len(players) < 2:
+        await self.bot.say('Sorry, pots require at least 2 players.')
+        return
+
+    events = []
+    events.append('**Beginning the pot...**\nReward: **{}** XP\n'.format(cap))
+
+    rolls = []
+    lowest = 0
+    highest = 0
+    for i in range(0, len(players)):
+        a = random.randint(0,10000)
+        while a in rolls:
+            a = random.randint(0,10000)
+        if a > max(rolls):
+            highest = i
+        if a < min(rolls):
+            lowest = i
+        rolls.append(a)
+        events.append('<@{}> has rolled **{}**'.format(players[i]))
+
+    events.append('\nWinner: <@{}>\nLoser: <@{}>'.format(players[highest], players[lowest]))
+
+    highest_user = c.execute('SELECT * FROM Users WHERE id = {}'.format(players[highest])).fetchone()
+    lowest_user = c.execute('SELECT * FROM Users WHERE id = {}'.format(players[lowest])).fetchone()
+    h_exp, h_score = highest_user[2], highest_user[1]
+    l_exp, l_score = lowest_user[2], lowest_user[1]
+
+    c.execute('UPDATE Users SET exp = {}, score = {} WHERE id = {}'.format(h_exp + cap, level, h_score + cap, players[highest]))
+    c.execute('UPDATE Users SET exp = {}, score = {} WHERE id = {}'.format(l_exp - cap, level, l_score + cap, players[lowest]))
+    conn.commit()
+
 
   @commands.command(pass_context=True)
   async def grace(self, ctx):
