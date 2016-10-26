@@ -30,9 +30,12 @@ class LevelUp:
     self.last_saved = {}
     self.gamble_lock = {}
     self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 60}
+    self.pot_active_channels = {}
 
   @commands.command(pass_context=True)
   async def pot(self, ctx, cap : int):
+    if self.pot_active_channels.get(ctx.message.channel.id, None):
+        await self.bot.say('A pot is already active in this channel!')
     players = []
 
     author_id = ctx.message.author.id
@@ -45,7 +48,8 @@ class LevelUp:
     # s_score = user[1]
     # max_exp = calculate_xp_for_lvl(level)
 
-    await self.bot.say('**{}** has opened a pot of **{}**'.format(ctx.message.author.name, cap))
+    await self.bot.say('**{}** has opened a pot of **{}**\nType \'in\' to join!'.format(ctx.message.author.name, cap))
+    self.pot_active_channels[ctx.message.channel.id] = '1'
 
     def check(msg):
         return msg.content.lower() == 'in'
@@ -60,10 +64,12 @@ class LevelUp:
             if exp < cap:
                 await self.bot.say('You don\'t have enough exp to enter this pot (required: **{}**)'.format(pot))
             else:
+                await self.bot.say('Player <@{}> registered'.format(a_id))
                 players.append(a_id)
 
     if len(players) < 2:
         await self.bot.say('Sorry, pots require at least 2 players.')
+        self.pot_active_channels[ctx.message.channel.id] = None
         return
 
     events = []
@@ -93,6 +99,8 @@ class LevelUp:
     c.execute('UPDATE Users SET exp = {}, score = {} WHERE id = {}'.format(h_exp + cap, level, h_score + cap, players[highest]))
     c.execute('UPDATE Users SET exp = {}, score = {} WHERE id = {}'.format(l_exp - cap, level, l_score + cap, players[lowest]))
     conn.commit()
+
+    self.pot_active_channels[ctx.message.channel.id] = None
 
 
   @commands.command(pass_context=True)
