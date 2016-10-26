@@ -29,7 +29,7 @@ class LevelUp:
     self.last_trained = {}
     self.last_saved = {}
     self.gamble_lock = {}
-    self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 60}
+    self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 10}
     self.pot_active_channels = {}
 
   @commands.command(pass_context=True)
@@ -77,7 +77,7 @@ class LevelUp:
             user = c.execute('SELECT * FROM Users WHERE id = {}'.format(a_id)).fetchone()
             exp = user[2]
             if exp < cap:
-                await self.bot.say('You don\'t have enough exp to enter this pot (required: **{}**)'.format(pot))
+                await self.bot.say('You don\'t have enough exp to enter this pot (required: **{}**)'.format(cap))
             elif a_id not in players:
                 await self.bot.say('Player <@{}> registered'.format(a_id))
                 players.append(a_id)
@@ -91,7 +91,9 @@ class LevelUp:
     events = []
     events.append('**Beginning the pot...**\nReward: **{}** XP\n'.format(cap))
 
-    rolls = [random.randint(0,10000)]
+    first_roll = random.randint(0,10000)
+    rolls = [first_roll]
+    events.append('<@{}> has rolled **{}**'.format(players[0], first_roll))
     lowest = 0
     highest = 0
     for i in range(1, len(players)):
@@ -103,17 +105,19 @@ class LevelUp:
         if a < min(rolls):
             lowest = i
         rolls.append(a)
-        events.append('<@{}> has rolled **{}**'.format(players[i]))
+        events.append('<@{}> has rolled **{}**'.format(players[i], a))
 
     events.append('\nWinner: <@{}>\nLoser: <@{}>'.format(players[highest], players[lowest]))
+
+    await self.bot.say('\n'.join(events))
 
     highest_user = c.execute('SELECT * FROM Users WHERE id = {}'.format(players[highest])).fetchone()
     lowest_user = c.execute('SELECT * FROM Users WHERE id = {}'.format(players[lowest])).fetchone()
     h_exp, h_score = highest_user[2], highest_user[1]
     l_exp, l_score = lowest_user[2], lowest_user[1]
 
-    c.execute('UPDATE Users SET exp = {}, score = {} WHERE id = {}'.format(h_exp + cap, level, h_score + cap, players[highest]))
-    c.execute('UPDATE Users SET exp = {}, score = {} WHERE id = {}'.format(l_exp - cap, level, l_score + cap, players[lowest]))
+    c.execute('UPDATE Users SET exp = {}, score = {} WHERE id = {}'.format(h_exp + cap, h_score + cap, players[highest]))
+    c.execute('UPDATE Users SET exp = {}, score = {} WHERE id = {}'.format(l_exp - cap, l_score - cap, players[lowest]))
     conn.commit()
 
     self.pot_active_channels[ctx.message.channel.id] = None
