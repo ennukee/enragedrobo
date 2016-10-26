@@ -29,7 +29,7 @@ class LevelUp:
     self.last_trained = {}
     self.last_saved = {}
     self.gamble_lock = {}
-    self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 10}
+    self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 20}
     self.pot_active_channels = {}
 
   @commands.command(pass_context=True)
@@ -62,7 +62,7 @@ class LevelUp:
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
 
-    await self.bot.say('**{}** has opened a pot of **{}**\nType \'in\' to join!'.format(ctx.message.author.name, cap))
+    await self.bot.say('**{}** has opened a pot of **{}**\nType \'in\' to join! You have 20 seconds to join.'.format(ctx.message.author.name, cap))
     self.pot_active_channels[ctx.message.channel.id] = '1'
 
     def check(msg):
