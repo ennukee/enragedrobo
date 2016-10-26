@@ -123,22 +123,27 @@ async def on_message(message):
       # Anti-cheat detection
       cheated = False
       exp_gained = sum(calculate_xp_for_lvl(x) for x in range(1,level)) + user[2]
-      print("{} vs {}".format(exp_gained, user[1]))
       if exp_gained != user[1]:
-        await bot.send_message(message.channel, '**Looks like <@{}> has been cheating...**\n(reset to level 1, speak to regain appropriate levels)'.format(message.author.id))
-        to_set_to = min(exp_gained, user[2])
+        await bot.send_message(message.channel, '**Looks like <@{}> has been cheating (or the database bugged)...**\n(reset to level 1, speak to regain appropriate levels)'.format(message.author.id))
+        to_set_to = min(exp_gained, user[1])
         new_exp = to_set_to
         new_score = to_set_to
         level = 1
 
+      leveled = False
       if new_exp > calculate_xp_for_lvl(level) and not cheated:
-        new_exp -= calculate_xp_for_lvl(level)
-        level += 1
+        leveled = True
+        while new_exp > calculate_xp_for_lvl(level):
+          new_exp -= calculate_xp_for_lvl(level)
+          level += 1
+        
+      c.execute('UPDATE Users SET exp = {}, level = {}, score = {} WHERE id = {}'.format(new_exp, level, new_score, author_id))
+      conn.commit()
+
+      if leveled:
         await bot.send_message(message.channel, "**:up: | Level Up!**".format(author_id, level))
         generate_level_up_image(level, message.author.avatar_url)
         await bot.send_file(message.channel, './data/levelup/level_up.jpg')
-      c.execute('UPDATE Users SET exp = {}, level = {}, score = {} WHERE id = {}'.format(new_exp, level, new_score, author_id))
-      conn.commit()
 
   if not 'auto_respond' in ignored:
     auto_responses = {
