@@ -48,7 +48,7 @@ class LevelUp:
             level = int(user[3])
             s_score = user[1]
             max_exp = calculate_xp_for_lvl(level)
-            await self.bot.say('<@{}>\nLevel **{}**\nEXP: {}\{}\nScore: {}'.format(u_id, exp, max_exp, s_score))
+            await self.bot.say('<@{}>\nLevel **{}**\nEXP: {}\{}\nScore: {}'.format(u_id, level, exp, max_exp, s_score))
 
 
 
