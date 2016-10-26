@@ -56,6 +56,9 @@ class LevelUp:
     if self.pot_active_channels.get(ctx.message.channel.id, None):
         await self.bot.say('A pot is already active in this channel!')
         return
+    elif cap < 1:
+        await self.bot.say('A pot must be at least 1 EXP! (sorry reverse potters)')
+        return
     players = []
 
     author_id = ctx.message.author.id
@@ -66,7 +69,7 @@ class LevelUp:
     self.pot_active_channels[ctx.message.channel.id] = '1'
 
     def check(msg):
-        return msg.content.lower() == 'in'
+        return msg.content.lower() == 'in' and msg.channel.id == ctx.message.channel.id
 
     start_time = datetime.datetime.now()
     cur_time = datetime.datetime.now()
