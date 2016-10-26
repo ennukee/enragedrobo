@@ -55,6 +55,7 @@ class LevelUp:
   async def pot(self, ctx, cap : int):
     if self.pot_active_channels.get(ctx.message.channel.id, None):
         await self.bot.say('A pot is already active in this channel!')
+        return
     players = []
 
     author_id = ctx.message.author.id
@@ -68,7 +69,8 @@ class LevelUp:
         return msg.content.lower() == 'in'
 
     start_time = datetime.datetime.now()
-    while (datetime.datetime.now() - start_time).total_seconds() < self.lock_timers['pot']:
+    cur_time = datetime.datetime.now()
+    while (cur_time - start_time).total_seconds() < self.lock_timers['pot']:
         msg = await self.bot.wait_for_message(timeout=5, check=check)
         if msg is not None:
             a_id = msg.author.id
@@ -79,6 +81,7 @@ class LevelUp:
             else:
                 await self.bot.say('Player <@{}> registered'.format(a_id))
                 players.append(a_id)
+        cur_time = datetime.datetime.now()
 
     if len(players) < 2:
         await self.bot.say('Sorry, pots require at least 2 players.')
@@ -88,10 +91,10 @@ class LevelUp:
     events = []
     events.append('**Beginning the pot...**\nReward: **{}** XP\n'.format(cap))
 
-    rolls = []
+    rolls = [random.randint(0,10000)]
     lowest = 0
     highest = 0
-    for i in range(0, len(players)):
+    for i in range(1, len(players)):
         a = random.randint(0,10000)
         while a in rolls:
             a = random.randint(0,10000)
