@@ -184,7 +184,7 @@ class LevelUp:
     # 2.50% -> Boss fight
 
     options = ['lose', 'lock', 'double', 'level', 'reset_training', 'boss'] 
-    result = np.random.choice(options, p = [0.40, 0.3, 0.075, 0.1, 0.1, 0.025])
+    result = np.random.choice(options, p = [0.40, 0.3, 0.075, 0.1, 0.1, 0])
 
     if result == 'lose':
         recently_saved = self.last_saved.get(author_id, None)
@@ -205,9 +205,10 @@ class LevelUp:
         new_score += offer
         await self.bot.say('You feel the black magic grace you with a gift. You gain back your offering and more.')
     elif result == 'level':
+        gain = int((max_exp - exp) * random.random())
         await self.bot.say('The black magic courses through you. You gain a portion of your remaining level.')
-        new_exp += int((max_exp - exp) * random.random())
-        new_score += int((max_exp - exp) * random.random())
+        new_exp += gain
+        new_score += gain
     elif result == 'reset_training':
         if offer < max_exp / 4:
             await self.bot.say('You feel slightly refreshed, but the offering was not enough to fully refresh you.\n(Sacrifice at least a fourth of a level to unlock this result)')
