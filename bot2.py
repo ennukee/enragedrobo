@@ -49,7 +49,7 @@ logger.addHandler(handler)
 conn = sqlite3.connect('users.db')
 
 # - - Bot instantiation - - #
-bot = commands.Bot(command_prefix=['?'], description=description, pm_help=None, help_attrs=dict(hidden=True))
+bot = commands.Bot(command_prefix=['='], description=description, pm_help=None, help_attrs=dict(hidden=True))
 
 # - - Game constants - - #
 from utils.BotConstants import *
@@ -110,8 +110,15 @@ async def on_message(message):
     not message.channel.is_private,
     last_msg != message.content
   ]
-  if all(req for req in prereq):
+  if all(req for req in prereqs):
     botv.last_message[author_id] = message.content
+
+    # JSON file 
+    json_path = botv.levelup['json_path'].format(author_id)
+    if not os.path.isfile(json_path):
+      with open(json_path, 'w+') as f:
+        basic_form = {'valid': True}
+        json.dump(basic_form, f)
 
     # Database connections
     c = conn.cursor()
@@ -142,7 +149,7 @@ async def on_message(message):
       c.execute('UPDATE Users SET exp = {}, level = {}, score = {} WHERE id = {}'.format(new_exp, level, new_score, author_id))
       conn.commit()
 
-      congratulate_level(bot, level, level_gain, message)
+      await congratulate_level(bot, level, level_gain, message)
 
   if not 'auto_respond' in ignored:
     auto_responses = {
@@ -151,7 +158,11 @@ async def on_message(message):
       "its": "dat boi",
       u"(╯°□°）╯︵ ┻━┻": u"#tablelivesmatter\n┬─┬﻿ ノ( ゜-゜ノ)",
       "\\o\\": "/o/",
-      "/o/": "\\o\\"
+      "/o/": "\\o\\",
+      "lol": "\_o\_",
+      "|o|": "\_o\_",
+      "_o_": "|o|",
+      "\_o\_": "|o|"
       }
     if message.content in auto_responses.keys():
       await bot.send_message(message.channel, auto_responses[message.content])

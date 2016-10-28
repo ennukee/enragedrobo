@@ -23,8 +23,23 @@ from PIL import ImageDraw
 
 # - - My libraries - - #
 import checks # Ensures various predefined conditions are met
+from utils.BotConstants import *
 from utils import imageloader # Image downloader
 from utils.BasicUtility import * # Basic utility functions
+
+def read_user_json(u_id):
+	data = {'valid': False}
+	json_path = botv.levelup['json_path'].format(u_id)
+	if os.path.isfile(json_path):
+		with open(json_path) as f:
+			data = json.load(f)
+	return data
+
+def write_user_json(u_id, data):
+  json_path = botv.levelup['json_path'].format(u_id)
+  if os.path.isfile(json_path):
+    with open(json_path, 'w+') as f:
+      json.dump(data, f)
 
 def calculate_xp_for_lvl(level):
   return int(sum(i+300*pow(2, i/7) for i in range(1,level+1))/4)
@@ -36,16 +51,18 @@ def calculate_level_gain(cur_exp, level):
 		gain += 1
 	return cur_exp, gain
 
-def congratulate_level(bot, level, gain, message):
+async def congratulate_level(bot, level, gain, message):
   if gain < 1:
-		return
-	await bot.send_message(message.channel, "**:up: | Level Up!**")
+    return
+
+  await bot.send_message(message.channel, "**:up: | Level Up!**")
   generate_level_up_image(level, message.author.avatar_url)
   await bot.send_file(message.channel, './data/levelup/level_up.jpg')
-  if level == 5 or level - 5 < gain:
-  	await bot.send_message(message.channel, "**Level 5 Perks**\nUnlocked `?gamble <amt>` and `?train`")
-  elif level == 25 or level - 25 < gain:
-  	await bot.send_message(message.channel, "**Level 25 Perks**\nUnlocked `?setbg <link>`!")
+
+  if (level == 5) or (level - 5 < gain and level > 5):
+    await bot.send_message(message.channel, "**Level 5 Perks**\nUnlocked `?gamble <amt>` and `?train`")
+  elif (level == 25) or (level - 25 < gain and level > 25):
+    await bot.send_message(message.channel, "**Level 25 Perks**\nUnlocked `?setbg <link>`!")
 
 def generate_level_up_image(level, url):
   from PIL import Image

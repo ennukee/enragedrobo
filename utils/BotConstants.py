@@ -25,6 +25,7 @@ class BotConstants:
     self.last_flip = None
     self.message_xp = 5
     self.last_message = {}
+    self.levelup = {'json_path': './data/levelup/users/{}.json'}
 
   def set_private_channel(self, channel):
     self.private_channel = channel

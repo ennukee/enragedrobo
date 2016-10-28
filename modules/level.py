@@ -21,6 +21,7 @@ import checks # Ensures various predefined conditions are met
 from utils.BasicUtility import *
 from utils.BotConstants import *
 from utils import imageloader # Image downloader
+from utils.Level import *
 
 class LevelUp:
   """Holds all the logic for the bot's leveling system"""
@@ -31,6 +32,14 @@ class LevelUp:
     self.gamble_lock = {}
     self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 20}
     self.pot_active_channels = {}
+
+  @commands.command(pass_context=True)
+  async def color(self, ctx, mode : str, r : int, g : int, b : int):
+    if mode not in ['xp', 'text']:
+      return
+    u_data = read_user_json(ctx.message.author.id)
+    u_data[mode] = (r, g, b)
+    write_user_json(ctx.message.author.id, u_data)
 
   @commands.command(pass_context=True)
   async def lookup(self, ctx):
@@ -512,6 +521,8 @@ class LevelUp:
     s_placing = 1 + c.execute("SELECT (select count(*) from Users as u2 where u2.score > u1.score) FROM Users as u1 WHERE id = {}".format(author_id)).fetchone()[0]
     s_score = user[1]
 
+    u_data = read_user_json(author_id)
+
     if mock and mock.isdigit():
         level = int(mock)
         username = "EXAMPLE"
@@ -551,7 +562,10 @@ class LevelUp:
     level_font = ImageFont.truetype('./data/Roboto-Bold.ttf', 30)
     placing_font = ImageFont.truetype(font, 11)
     base_color = (60, 60, 70)
-    exp_color = (190, 190, 200)
+
+    # Custom colors
+    exp_color = tuple(u_data.get('xp', None)) or (190, 190, 200)
+    base_color = tuple(u_data.get('text', None)) or (60, 60, 70)
 
     # Background filler
     draw.rectangle([74,8,292,92], fill=(255, 255, 255, 150))

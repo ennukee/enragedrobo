@@ -5,6 +5,7 @@ level-out.jpg
 data/levelup/level_up.jpg
 data/levelup/level_out.jpg
 data/levelup/users/*.jpg
+data/levelup/users/*.json
 users.db
 
 data/opus.dll
