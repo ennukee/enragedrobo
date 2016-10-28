@@ -61,8 +61,13 @@ class LevelUp:
     if mode not in ['xp', 'text']:
       await self.bot.say('Supported modes: `xp` and `text`')
       return
+
+    old_values = {'xp': (190, 190, 170), 'text': (60, 60, 70)}
     u_data = read_user_json(ctx.message.author.id)
-    u_data[mode] = (r, g, b)
+    if any(x < 0 for x in [r,g,b]):
+      u_data[mode] = old_values[mode]
+    else:
+      u_data[mode] = (r, g, b)
     write_user_json(ctx.message.author.id, u_data)
 
   @commands.command(pass_context=True)
@@ -217,7 +222,7 @@ class LevelUp:
     # 2.50% -> Boss fight
 
     options = ['lose', 'lock', 'double', 'level', 'reset_training', 'boss'] 
-    result = np.random.choice(options, p = [0.40, 0.3, 0.075, 0.1, 0.1, 0])
+    result = np.random.choice(options, p = [0.40, 0.3, 0.075, 0.1, 0.1, 0.025])
 
     if result == 'lose':
         recently_saved = self.last_saved.get(author_id, None)
@@ -588,8 +593,8 @@ class LevelUp:
     base_color = (60, 60, 70)
 
     # Custom colors
-    exp_color = tuple(u_data.get('xp', None)) or (190, 190, 200)
-    base_color = tuple(u_data.get('text', None)) or (60, 60, 70)
+    exp_color = tuple(u_data.get('xp', (190, 190, 200)))
+    base_color = tuple(u_data.get('text', (60, 60, 70)))
 
     # Background filler
     draw.rectangle([74,8,292,92], fill=(255, 255, 255, 150))
