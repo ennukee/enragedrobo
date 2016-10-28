@@ -33,9 +33,33 @@ class LevelUp:
     self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 20}
     self.pot_active_channels = {}
 
+  @commands.command()
+  async def levelhelp(self):
+    """A helper function for all the stuff in the levelup game / module"""
+    events = []
+    events.append('Welcome to enragedrobo\'s **LevelUP** game!\n')
+    events.append('`level` - Display a card containing your LevelUP information!')
+    events.append('`train` - Unlocks at level **5**. Gives a boost in XP, can be very high if you are lucky. 1 hour cooldown.')
+    events.append('`gamble <amount>` - Gamble a certain amount of XP for a chance at glorious prizes!')
+    events.append('`pot <amount>` - Open a pot for an amount of XP. The lowest roll pays the highest!')
+    events.append('`grace` - Shows the remaining time on the Grace of Light!')
+    events.append('`color <mode> <r> <g> <b>` - Set the color for your `xp` or `text`')
+    events.append('`lookup <player>` - Use this command with an @ mention to see that person\'s LevelUP data!')
+
+    await self.bot.say('\n'.join(events))
+
+  @commands.command(pass_context=True, hidden=True)
+  @checks.is_owner()
+  async def override(self, ctx, u_id : int, amt : int):
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    user = c.execute('UPDATE Users SET xp = {}, score = {}, level = 1 WHERE ID = {}'.format(amt, amt, u_id))
+    conn.commit()
+
   @commands.command(pass_context=True)
   async def color(self, ctx, mode : str, r : int, g : int, b : int):
     if mode not in ['xp', 'text']:
+      await self.bot.say('Supported modes: `xp` and `text`')
       return
     u_data = read_user_json(ctx.message.author.id)
     u_data[mode] = (r, g, b)
