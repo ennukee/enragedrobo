@@ -21,6 +21,7 @@ import checks # Ensures various predefined conditions are met
 from utils.BasicUtility import *
 from utils.BotConstants import *
 from utils import imageloader # Image downloader
+from utils.Level import *
 
 class LevelUp:
   """Holds all the logic for the bot's leveling system"""
@@ -31,6 +32,38 @@ class LevelUp:
     self.gamble_lock = {}
     self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 20}
     self.pot_active_channels = {}
+
+  @commands.command()
+  async def levelhelp(self):
+    """A helper function for all the stuff in the levelup game / module"""
+    events = []
+    events.append('Welcome to enragedrobo\'s **LevelUP** game!\n')
+    events.append('`level` - Display a card containing your LevelUP information!')
+    events.append('`train` - Unlocks at level **5**. Gives a boost in XP, can be very high if you are lucky. 1 hour cooldown.')
+    events.append('`gamble <amount>` - Gamble a certain amount of XP for a chance at glorious prizes!')
+    events.append('`pot <amount>` - Open a pot for an amount of XP. The lowest roll pays the highest!')
+    events.append('`grace` - Shows the remaining time on the Grace of Light!')
+    events.append('`color <mode> <r> <g> <b>` - Set the color for your `xp` or `text`')
+    events.append('`lookup <player>` - Use this command with an @ mention to see that person\'s LevelUP data!')
+
+    await self.bot.say('\n'.join(events))
+
+  @commands.command(pass_context=True, hidden=True)
+  @checks.is_owner()
+  async def override(self, ctx, u_id : int, amt : int):
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    user = c.execute('UPDATE Users SET xp = {}, score = {}, level = 1 WHERE ID = {}'.format(amt, amt, u_id))
+    conn.commit()
+
+  @commands.command(pass_context=True)
+  async def color(self, ctx, mode : str, r : int, g : int, b : int):
+    if mode not in ['xp', 'text']:
+      await self.bot.say('Supported modes: `xp` and `text`')
+      return
+    u_data = read_user_json(ctx.message.author.id)
+    u_data[mode] = (r, g, b)
+    write_user_json(ctx.message.author.id, u_data)
 
   @commands.command(pass_context=True)
   async def lookup(self, ctx):
@@ -184,7 +217,7 @@ class LevelUp:
     # 2.50% -> Boss fight
 
     options = ['lose', 'lock', 'double', 'level', 'reset_training', 'boss'] 
-    result = np.random.choice(options, p = [0.40, 0.3, 0.075, 0.1, 0.1, 0.025])
+    result = np.random.choice(options, p = [0.40, 0.3, 0.075, 0.1, 0.1, 0])
 
     if result == 'lose':
         recently_saved = self.last_saved.get(author_id, None)
@@ -205,9 +238,10 @@ class LevelUp:
         new_score += offer
         await self.bot.say('You feel the black magic grace you with a gift. You gain back your offering and more.')
     elif result == 'level':
+        gain = int((max_exp - exp) * random.random())
         await self.bot.say('The black magic courses through you. You gain a portion of your remaining level.')
-        new_exp += int((max_exp - exp) * random.random())
-        new_score += int((max_exp - exp) * random.random())
+        new_exp += gain
+        new_score += gain
     elif result == 'reset_training':
         if offer < max_exp / 4:
             await self.bot.say('You feel slightly refreshed, but the offering was not enough to fully refresh you.\n(Sacrifice at least a fourth of a level to unlock this result)')
@@ -511,6 +545,8 @@ class LevelUp:
     s_placing = 1 + c.execute("SELECT (select count(*) from Users as u2 where u2.score > u1.score) FROM Users as u1 WHERE id = {}".format(author_id)).fetchone()[0]
     s_score = user[1]
 
+    u_data = read_user_json(author_id)
+
     if mock and mock.isdigit():
         level = int(mock)
         username = "EXAMPLE"
@@ -550,7 +586,10 @@ class LevelUp:
     level_font = ImageFont.truetype('./data/Roboto-Bold.ttf', 30)
     placing_font = ImageFont.truetype(font, 11)
     base_color = (60, 60, 70)
-    exp_color = (190, 190, 200)
+
+    # Custom colors
+    exp_color = tuple(u_data.get('xp', None)) or (190, 190, 200)
+    base_color = tuple(u_data.get('text', None)) or (60, 60, 70)
 
     # Background filler
     draw.rectangle([74,8,292,92], fill=(255, 255, 255, 150))

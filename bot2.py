@@ -27,6 +27,7 @@ from utils import imageloader # Image downloader
 from utils.Champion import *
 from utils.BasicUtility import * # Basic utility functions
 from utils.MALutil import * # MyAnimeList utility functions
+from utils.Level import *
 
 
 # - - - - - - - - - - #
@@ -96,8 +97,6 @@ async def on_message(message):
   channel_ignored = [f for f in os.listdir(ci_path)]
   ignored = server_wide_ignored + channel_ignored
 
-  no_xp_for_command = ['level', 'train', 'gamble']
-
   print(invoker)
   print(server_wide_ignored)
   print(channel_ignored)
@@ -105,13 +104,27 @@ async def on_message(message):
   if invoker in ignored:
     return
 
-  if not 'level' in ignored and not message.channel.is_private and not invoker in no_xp_for_command:
-    last_msg = botv.last_message.get(author_id, None)
-    if last_msg == message.content:
-      return
+  last_msg = botv.last_message.get(author_id, None)
+  prereqs = [
+    not 'level' in ignored, 
+    not message.channel.is_private,
+    last_msg != message.content
+  ]
+  if all(req for req in prereqs):
     botv.last_message[author_id] = message.content
+
+    # JSON file 
+    json_path = botv.levelup['json_path'].format(author_id)
+    if not os.path.isfile(json_path):
+      with open(json_path, 'w+') as f:
+        basic_form = {'valid': True}
+        json.dump(basic_form, f)
+
+    # Database connections
     c = conn.cursor()
     user = c.execute('SELECT * FROM Users WHERE ID={} LIMIT 1'.format(author_id)).fetchone()
+
+    # Score logic
     score_val = botv.message_xp
     if user is None:
       c.execute('INSERT INTO Users(id, exp, level, score) VALUES({}, {}, {}, {})'.format(author_id, score_val, 1, score_val))
@@ -130,20 +143,13 @@ async def on_message(message):
         new_score = to_set_to
         level = 1
 
-      leveled = False
-      if new_exp > calculate_xp_for_lvl(level) and not cheated:
-        leveled = True
-        while new_exp > calculate_xp_for_lvl(level):
-          new_exp -= calculate_xp_for_lvl(level)
-          level += 1
+      new_exp, level_gain = calculate_level_gain(new_exp, level)
+      level += level_gain
         
       c.execute('UPDATE Users SET exp = {}, level = {}, score = {} WHERE id = {}'.format(new_exp, level, new_score, author_id))
       conn.commit()
 
-      if leveled:
-        await bot.send_message(message.channel, "**:up: | Level Up!**".format(author_id, level))
-        generate_level_up_image(level, message.author.avatar_url)
-        await bot.send_file(message.channel, './data/levelup/level_up.jpg')
+      await congratulate_level(bot, level, level_gain, message)
 
   if not 'auto_respond' in ignored:
     auto_responses = {
@@ -152,7 +158,11 @@ async def on_message(message):
       "its": "dat boi",
       u"(╯°□°）╯︵ ┻━┻": u"#tablelivesmatter\n┬─┬﻿ ノ( ゜-゜ノ)",
       "\\o\\": "/o/",
-      "/o/": "\\o\\"
+      "/o/": "\\o\\",
+      "lol": "\_o\_",
+      "|o|": "\_o\_",
+      "_o_": "|o|",
+      "\_o\_": "|o|"
       }
     if message.content in auto_responses.keys():
       await bot.send_message(message.channel, auto_responses[message.content])
