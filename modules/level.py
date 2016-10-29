@@ -75,12 +75,12 @@ class LevelUp:
       try:
           result = eval(code)
       except Exception as e:
-          await bot.say(python.format(type(e).__name__ + ': ' + str(e)))
+          await self.bot.say(python.format(type(e).__name__ + ': ' + str(e)))
           return
 
       if asyncio.iscoroutine(result):
           result = await result
-      await bot.say(python.format(result))
+      await self.bot.say(python.format(result))
 
   @commands.command(pass_context=True)
   async def boss(self, ctx, mode = None):
