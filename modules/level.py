@@ -65,25 +65,14 @@ class LevelUp:
 
     await self.bot.say('\n'.join(events))
 
-  @commands.command(pass_context=True, hidden=True)
-  @checks.is_owner()
-  async def leveldebug(self, ctx, *, code : str):
-      """Evaluates python code"""
-      code = code.strip('` ')
-      python = '```py\n{}\n```'
-      result = None
-      try:
-          result = eval(code)
-      except Exception as e:
-          await self.bot.say(python.format(type(e).__name__ + ': ' + str(e)))
-          return
-
-      if asyncio.iscoroutine(result):
-          result = await result
-      await self.bot.say(python.format(result))
-
   @commands.command(pass_context=True)
-  async def boss(self, ctx, mode = None):
+  async def boss(self, ctx, attacks : str):
+    def proper_form(s):
+      return len(s) == 7 and all(x in "ADSB" for x in s)
+    if not proper_form(attacks):
+      await self.bot.say('Attacks must be a seven-character string consisting of A, D, S, or B (attack, defend, savage, bolster)')
+      return
+
     if self.raid['died_at'] != None:
       # Boss generation
       if self.raid['died_at'] != 0:
@@ -116,10 +105,6 @@ class LevelUp:
     perc_health = int(self.raid['boss']['health'] / self.raid['boss']['maxhealth'] * 1000) / 10
     events.append('Health: {}% ({} / {})\n'.format(perc_health, self.raid['boss']['health'], self.raid['boss']['maxhealth']))
 
-    if mode == 'status':
-      await self.bot.say('\n'.join(events))
-      return
-
     # Player info
     author_id = ctx.message.author.id
     conn = sqlite3.connect('users.db')
@@ -135,13 +120,18 @@ class LevelUp:
     time_since_attack = (datetime.datetime.now() - attack_cd).total_seconds() if attack_cd else 100000
     if time_since_attack < self.raid['attack_cooldown']:
       mins_left = int((self.raid['attack_cooldown'] - time_since_attack) / 60)
+      t = "minutes"
       if mins_left == 0:
-        mins_left = self.raid['attack_cooldown'] - time_since_attack
-      await self.bot.say('You are too tired to attack yet, try again in {} minutes.'.format(mins_left))
+        mins_left = int(self.raid['attack_cooldown'] - time_since_attack)
+        t = "seconds"
+      await self.bot.say('You are too tired to attack yet, try again in {} {}.'.format(mins_left, t))
       return
 
-    damage_dealt = random.randint(int(10 * level * (1 + 0.1 * prestige)), int(12 * level * (1 + 0.1 * prestige)))
-    events.append('You deal **{}** damage to the boss!'.format(damage_dealt))
+    correct_order = [random.choice("ADSB") for x in "1234567"]
+    num_correct = sum([attacks[i] == correct_order[i] for i in range(0, 7)])
+    output_form = [":white_check_mark:" if attacks[i] == correct_order[i] else ":x:" for i in range(0, 7)]
+    damage_dealt = int((num_correct / 7) * random.randint(int(10 * level * (1 + 0.1 * prestige)), int(30 * level * (1 + 0.1 * prestige))))
+    events.append('Your moves were... {}\nYou deal **{}** damage to the boss!'.format(' '.join(output_form), damage_dealt))
 
     self.raid['boss']['health'] -= damage_dealt
     contribution = self.raid['contribution'].get(author_id, 0)
@@ -236,10 +226,13 @@ class LevelUp:
   @commands.command(pass_context=True, hidden=True)
   @checks.is_owner()
   async def override(self, ctx, u_id : int, amt : int):
-    conn = sqlite3.connect('users.db')
-    c = conn.cursor()
-    user = c.execute('UPDATE Users SET exp = {}, score = {}, level = 1 WHERE ID = {}'.format(amt, amt, u_id))
-    conn.commit()
+    if u_id == 0:
+      self.raid['boss']['health'] = amt
+    else:
+      conn = sqlite3.connect('users.db')
+      c = conn.cursor()
+      user = c.execute('UPDATE Users SET exp = {}, score = {}, level = 1 WHERE ID = {}'.format(amt, amt, u_id))
+      conn.commit()
 
   @commands.command(pass_context=True)
   async def color(self, ctx, mode : str, r : int, g : int, b : int):
