@@ -37,16 +37,18 @@ class LevelUp:
         {
           'name': '', 
           'health': 0, 
-          'maxhealth': 0
+          'maxhealth': 0,
+          'kill_order': ""
         }, 
       'cooldown': {}, 
       'contribution': {},
       'respawn_timer': 14400,
-      'attack_cooldown': 120,
+      'attack_cooldown': 360,
       'died_at': 0,
       'boss_names': ['Chromus', 'Al\'sharah', 'Venomancer', 'Tishlaveer', 'Autrobeen'],
       'five_percent_bonus': 5000,
-      'twenty_percent_bonus': 7500
+      'twenty_percent_bonus': 7500,
+      'attack_length': 10
     }
 
   @commands.command()
@@ -61,16 +63,16 @@ class LevelUp:
     events.append('`grace` - Shows the remaining time on the Grace of Light!')
     events.append('`color <mode> <r> <g> <b>` - Set the color for your `xp` or `text`')
     events.append('`lookup <player>` - Use this command with an @ mention to see that person\'s LevelUP data!')
-    events.append('`boss` - Fight a powerful foe with friends!')
+    events.append('`boss <attack>` - Fight a powerful foe with friends!')
 
     await self.bot.say('\n'.join(events))
 
   @commands.command(pass_context=True)
   async def boss(self, ctx, attacks : str):
     def proper_form(s):
-      return len(s) == 7 and all(x in "ADSB" for x in s)
+      return len(s) == self.raid['attack_length'] and all(x in "ADSBEF" for x in s)
     if not proper_form(attacks):
-      await self.bot.say('Attacks must be a seven-character string consisting of A, D, S, or B (attack, defend, savage, bolster)')
+      await self.bot.say('Attacks must be a ten-character string consisting of A, D, S, B, E, and F (attack, defend, savage, block, execute, flee)')
       return
 
     if self.raid['died_at'] != None:
@@ -85,7 +87,7 @@ class LevelUp:
         # Let's make a new boss
         await self.bot.say('***A powerful new strength appears...***')
         new_name = random.choice(self.raid['boss_names'])
-        health = random.randint(50000, 100000)
+        health = random.randint(75000, 150000)
 
         self.raid['boss']['name'] = new_name
         self.raid['boss']['health'] = health
@@ -93,6 +95,7 @@ class LevelUp:
         self.raid['cooldown'] = {}
         self.raid['contribution'] = {}
         self.raid['died_at'] = None
+        self.raid['boss']['kill_order'] = [random.choice("ADSBEF") for x in "1" * self.raid['attack_length']]
       else:
         mins_left = int((self.raid['respawn_timer'] - time_since_death) / 60)
         await self.bot.say('The corpse of {} still lies, rotting away...\n(Respawn in {} minutes)'.format(self.raid['boss']['name'], mins_left))
@@ -127,11 +130,13 @@ class LevelUp:
       await self.bot.say('You are too tired to attack yet, try again in {} {}.'.format(mins_left, t))
       return
 
-    correct_order = [random.choice("ADSB") for x in "1234567"]
-    num_correct = sum([attacks[i] == correct_order[i] for i in range(0, 7)])
-    output_form = [":white_check_mark:" if attacks[i] == correct_order[i] else ":x:" for i in range(0, 7)]
-    damage_dealt = int((num_correct / 7) * random.randint(int(10 * level * (1 + 0.1 * prestige)), int(30 * level * (1 + 0.1 * prestige))))
+    correct_order = self.raid['boss']['kill_order']
+    num_correct = sum([attacks[i] == correct_order[i] for i in range(0, self.raid['attack_length'])])
+    output_form = [":white_check_mark:" if attacks[i] == correct_order[i] else ":x:" for i in range(0, self.raid['attack_length'])]
+    damage_dealt = int((num_correct / 7) * random.randint(int(25 * level * (1 + 0.1 * prestige)), int(45 * level * (1 + 0.1 * prestige))))
     events.append('Your moves were... {}\nYou deal **{}** damage to the boss!'.format(' '.join(output_form), damage_dealt))
+
+    self.raid['boss']['kill_order'][random.randint(0, self.raid['attack_length'])] = random.choice('ADSBEF')
 
     self.raid['boss']['health'] -= damage_dealt
     contribution = self.raid['contribution'].get(author_id, 0)
