@@ -32,6 +32,22 @@ class LevelUp:
     self.gamble_lock = {}
     self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 20}
     self.pot_active_channels = {}
+    self.raid = {
+      'boss': 
+        {
+          'name': '', 
+          'health': 0, 
+          'maxhealth': 0
+        }, 
+      'cooldown': {}, 
+      'contribution': {},
+      'respawn_timer': 14400,
+      'attack_cooldown': 120,
+      'died_at': 0,
+      'boss_names': ['Chromus', 'Al\'sharah', 'Venomancer', 'Tishlaveer', 'Autrobeen'],
+      'five_percent_bonus': 5000,
+      'twenty_percent_bonus': 7500
+    }
 
   @commands.command()
   async def levelhelp(self):
@@ -45,6 +61,108 @@ class LevelUp:
     events.append('`grace` - Shows the remaining time on the Grace of Light!')
     events.append('`color <mode> <r> <g> <b>` - Set the color for your `xp` or `text`')
     events.append('`lookup <player>` - Use this command with an @ mention to see that person\'s LevelUP data!')
+
+    await self.bot.say('\n'.join(events))
+
+  @commands.command(pass_context=True)
+  async def boss(self, ctx, mode = None):
+    if self.raid['died_at'] != None:
+      # Boss generation
+      if self.raid['died_at'] != 0:
+        death_time = self.raid.get('died_at', None)
+        time_since_death = (datetime.datetime.now() - death_time).total_seconds() if death_time else 100000
+      else:
+        time_since_death = 100000
+
+      if time_since_death > self.raid['respawn_timer']:
+        # Let's make a new boss
+        await self.bot.say('***A powerful new strength appears...***')
+        new_name = random.choice(self.raid['boss_names'])
+        health = random.randint(50000, 100000)
+
+        self.raid['boss']['name'] = new_name
+        self.raid['boss']['health'] = health
+        self.raid['boss']['maxhealth'] = health
+        self.raid['cooldown'] = {}
+        self.raid['contribution'] = {}
+        self.raid['died_at'] = None
+      else:
+        mins_left = int((self.raid['respawn_timer'] - time_since_death) / 60)
+        await self.bot.say('The corpse of {} still lies, rotting away...\n(Respawn in {} minutes)'.format(self.raid['boss']['name'], mins_left))
+        return
+
+    # Boss time!
+    events = []
+    events.append('A **{}** stands before you...'.format(self.raid['boss']['name']))
+
+    perc_health = int(self.raid['boss']['health'] / self.raid['boss']['maxhealth'] * 1000) / 10
+    events.append('Health: {}% ({} / {})\n'.format(perc_health, self.raid['boss']['health'], self.raid['boss']['maxhealth']))
+
+    if mode == 'status':
+      await self.bot.say('\n'.join(events))
+      return
+
+    # Player info
+    author_id = ctx.message.author.id
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
+
+    exp = user[2]
+    level = int(user[3])
+    s_score = user[1]
+    prestige = user[4]
+
+    attack_cd = self.raid['cooldown'].get(author_id, None)
+    time_since_attack = (datetime.datetime.now() - attack_cd).total_seconds() if attack_cd else 100000
+    if time_since_attack < self.raid['attack_cooldown']:
+      mins_left = int((self.raid['attack_cooldown'] - time_since_attack) / 60)
+      await self.bot.say('You are too tired to attack yet, try again in {} minutes.'.format(mins_left))
+      return
+
+    damage_dealt = random.randint(int(10 * level * (1 + 0.1 * prestige)), int(12 * level * (1 + 0.1 * prestige)))
+
+    damage_dealt = 50000
+    events.append('You deal **{}** damage to the boss!'.format(damage_dealt))
+
+    self.raid['boss']['health'] -= damage_dealt
+    contribution = self.raid['contribution'].get(author_id, 0)
+    self.raid['contribution'][author_id] = contribution + damage_dealt
+    #self.raid['cooldown'][author_id] = datetime.datetime.now()
+
+    # Check if boss is now dead
+    if self.raid['boss']['health'] < 0:
+      self.raid['died_at'] = datetime.datetime.now()
+      events.append('\n**{} has fallen!**\n'.format(self.raid['boss']['name']))
+      events.append('**Contribution**')
+      h_user, h_contr = '', 0
+      for k, v in self.raid['contribution'].items():
+        if v > h_contr:
+          h_user = k
+          h_contr = v
+        perc_contr = int(v / self.raid['boss']['maxhealth'] * 1000) / 100
+        events.append('**<@{}> did {} damage** ({}%)'.format(k, v, perc_contr))
+
+      events.append('For doing the most damage, <@{}> gets a `?train` and `?grace` reset.\n'.format(h_user))
+      self.last_trained[h_user] = None
+      self.last_saved[h_user] = None
+      events.append('Everyone who did at least five percent of the damage gains **5000** EXP.')
+      events.append('Anyone who did at least twenty percent gains an additional **7500** EXP.')
+      events.append('**NOTE**: Prestige has reduced bonuses from raids.')
+
+      for k, v in self.raid['contribution'].items():
+        if v > self.raid['boss']['maxhealth'] / 20:
+          user = c.execute('SELECT * FROM Users WHERE id = {}'.format(k)).fetchone()
+          exp = user[2]
+          s_score = user[1]
+          prestige = user[4]
+
+          exp_gain = self.raid['five_percent_bonus'] * (1 + prestige * 0.1)
+          if v > self.raid['boss']['maxhealth'] / 5:
+            exp_gain += self.raid['twenty_percent_bonus'] * (1 + prestige * 0.1)
+
+          c.execute('UPDATE Users SET exp = {}, score = {} WHERE ID = {}'.format(exp + exp_gain, s_score + exp_gain, k))
+          conn.commit()
 
     await self.bot.say('\n'.join(events))
 
@@ -275,7 +393,7 @@ class LevelUp:
     # 2.50% -> Boss fight
 
     options = ['lose', 'lock', 'double', 'level', 'reset_training', 'boss'] 
-    result = np.random.choice(options, p = [0.40, 0.3, 0.075, 0.1, 0.1, 0.025])
+    result = np.random.choice(options, p = [0.40, 0.325, 0.075, 0.1, 0.1, 0])
 
     if result == 'lose':
         recently_saved = self.last_saved.get(author_id, None)
@@ -477,7 +595,7 @@ class LevelUp:
         events = ['You begin training...\n']
 
         exp_gain = level * 12 * (1 + prestige)
-        global_multiplier = 1
+        global_multiplier = 1 
         chance_of_occurring = 1.0
         i = 2 if time_since_last > WAIT_TIME*2 else 3
         r = random.randint(1,i)
