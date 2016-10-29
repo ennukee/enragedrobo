@@ -68,8 +68,8 @@ class LevelUp:
     events = []
     events.append('The **Grace of Light** speaks to you...\n')
     events.append('You are worthy of raising your **prestige**.')
-    events.append('If you do so, your EXP and Score will be reset to **ZERO**.')
-    events.append('Your overall ranking will also be reset in this process.')
+    events.append('If you do so, you will lose all the XP needed to go from 1 to 25 ({})'.format(botv.prestige_value))
+    events.append('Your overall ranking will also be dropped in this process.')
     events.append('However, you will permanently earn 100 percent extra experience.\n')
     events.append('You will keep the ability to do `?setbg`, but will have to re-level for anything else.\n')
     events.append('**Are you sure you want to prestige?** (y/n)')
@@ -84,7 +84,7 @@ class LevelUp:
       await self.bot.say('Come again another time, then. (Time ran out!)')
     else:
       if msg.content.lower() == 'y':
-        c.execute('UPDATE Users SET exp = 0, score = 0, level = 1, prestige = {} WHERE id = {}'.format(prestige + 1, author_id))
+        c.execute('UPDATE Users SET exp = {}, score = {}, level = 1, prestige = {} WHERE id = {}'.format(s_score - botv.prestige_value, s_score - botv.prestige_value, prestige + 1, author_id))
         conn.commit()
         await self.bot.say('Very well, you are now **Prestige {}**'.format(prestige + 1))
         if prestige + 1 == 1:
@@ -695,7 +695,7 @@ class LevelUp:
     emoji = {'1': ':first_place:', '2': ':second_place:', '3': ':third_place:'}.get(str(s_placing), ':newspaper:')
     await self.bot.send_message(ctx.message.channel, "{} | **{}'s Level Card**".format(emoji, username))
     await self.bot.send_file(ctx.message.channel, './data/levelup/level-out.jpg')
-    if level > 25:
+    if level >= 25:
       await self.bot.say('The **Grace of Light** lingers at your shoulder, eager to await your **prestige** (you are eligible to prestige with `?prestige`)')
 
       
