@@ -101,6 +101,8 @@ async def on_message(message):
   print(server_wide_ignored)
   print(channel_ignored)
 
+  debug_ignore_commands = ['override']
+
   if invoker in ignored:
     return
 
@@ -108,7 +110,8 @@ async def on_message(message):
   prereqs = [
     not 'level' in ignored, 
     not message.channel.is_private,
-    last_msg != message.content
+    last_msg != message.content,
+    invoker not in debug_ignore_commands
   ]
   if all(req for req in prereqs):
     botv.last_message[author_id] = message.content
@@ -125,14 +128,17 @@ async def on_message(message):
     user = c.execute('SELECT * FROM Users WHERE ID={} LIMIT 1'.format(author_id)).fetchone()
 
     # Score logic
-    score_val = botv.message_xp
+    score_val = botv.message_xp 
     if user is None:
-      c.execute('INSERT INTO Users(id, exp, level, score) VALUES({}, {}, {}, {})'.format(author_id, score_val, 1, score_val))
+      c.execute('INSERT INTO Users(id, exp, level, score, prestige) VALUES({}, {}, {}, {}, 0)'.format(author_id, score_val, 1, score_val))
       conn.commit()
     else:
+      prestige = user[4]
+      score_val *= (1 + prestige)
+
       new_exp, new_score = user[2] + score_val, user[1] + score_val
       level = user[3]
-
+    
       # Anti-cheat detection
       cheated = False
       exp_gained = sum(calculate_xp_for_lvl(x) for x in range(1,level)) + user[2]

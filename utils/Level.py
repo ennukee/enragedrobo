@@ -46,8 +46,8 @@ def calculate_xp_for_lvl(level):
 
 def calculate_level_gain(cur_exp, level):
 	gain = 0
-	while cur_exp > calculate_xp_for_lvl(level):
-		cur_exp -= calculate_xp_for_lvl(level)
+	while cur_exp > calculate_xp_for_lvl(level + gain):
+		cur_exp -= calculate_xp_for_lvl(level + gain)
 		gain += 1
 	return cur_exp, gain
 

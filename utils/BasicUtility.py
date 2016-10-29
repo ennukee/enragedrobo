@@ -24,4 +24,18 @@ def clean(i):
   return i.lower().replace(' ','')
 
 
+# Source: http://code.activestate.com/recipes/415384-decimal-to-roman-numerals/
+def decToRoman(i):
+  if i <=0 or i >= 4000:
+    return "INVALID"
+  return dTR_help(i, "", [1000,900,500,400,100,90,50,40,10,9,5,4,1], ["M","CM","D","CD","C","XC","L","XL","X","IX","V","IV","I"])
+
+def dTR_help(i, s, decs, romans):
+  if decs:
+    if (i < decs[0]):
+      return dTR_help(i,s,decs[1:],romans[1:])      
+    else:
+      return dTR_help(i-decs[0],s+romans[0],decs,romans)    
+  else:
+    return s
 
