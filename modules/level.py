@@ -48,18 +48,63 @@ class LevelUp:
 
     await self.bot.say('\n'.join(events))
 
+
+  @commands.command(pass_context=True)
+  async def prestige(self, ctx):
+    author_id = ctx.message.author.id
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
+
+    exp = user[2]
+    level = int(user[3])
+    s_score = user[1]
+    prestige = user[4]
+    
+    if level < 25:
+      await self.bot.say('The **Grace of Light** speaks to you...\n"You are not yet ready, come back when you reach level **25**"')
+      return
+
+    events = []
+    events.append('The **Grace of Light** speaks to you...\n')
+    events.append('You are worthy of raising your **prestige**.')
+    events.append('If you do so, your EXP and Score will be reset to **ZERO**.')
+    events.append('Your overall ranking will also be reset in this process.')
+    events.append('However, you will permanently earn 100 percent extra experience.\n')
+    events.append('You will keep the ability to do `?setbg`, but will have to re-level for anything else.\n')
+    events.append('**Are you sure you want to prestige?** (y/n)')
+
+    await self.bot.say('\n'.join(events))
+
+    def check(msg):
+      return msg.content.lower() in ['y','n'] and msg.channel.id == ctx.message.channel.id
+    
+    msg = await self.bot.wait_for_message(timeout=30, author=ctx.message.author, check=check)
+    if msg is None:
+      await self.bot.say('Come again another time, then. (Time ran out!)')
+    else:
+      if msg.content.lower() == 'y':
+        c.execute('UPDATE Users SET exp = 0, score = 0, level = 1, prestige = {} WHERE id = {}'.format(prestige + 1, author_id))
+        conn.commit()
+        await self.bot.say('Very well, you are now **Prestige {}**'.format(prestige + 1))
+        if prestige + 1 == 1:
+          await self.bot.say('**Prestige 1** Perks\nYou can now do `?color background` to set the background color of `?level`')
+      else:
+        await self.bot.say('Come again when you are prepared.')
+
+
   @commands.command(pass_context=True, hidden=True)
   @checks.is_owner()
   async def override(self, ctx, u_id : int, amt : int):
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    user = c.execute('UPDATE Users SET xp = {}, score = {}, level = 1 WHERE ID = {}'.format(amt, amt, u_id))
+    user = c.execute('UPDATE Users SET exp = {}, score = {}, level = 1 WHERE ID = {}'.format(amt, amt, u_id))
     conn.commit()
 
   @commands.command(pass_context=True)
   async def color(self, ctx, mode : str, r : int, g : int, b : int):
-    if mode not in ['xp', 'text']:
-      await self.bot.say('Supported modes: `xp` and `text`')
+    if mode not in ['xp', 'text', 'background']:
+      await self.bot.say('Supported modes: `xp`, `background` and `text`')
       return
 
     old_values = {'xp': (190, 190, 170), 'text': (60, 60, 70)}
@@ -68,6 +113,8 @@ class LevelUp:
       u_data[mode] = old_values[mode]
     else:
       u_data[mode] = (r, g, b)
+      if mode == 'background':
+        await self.bot.say('**NOTE**: `background` color changes will not appear until Prestige 1')
     write_user_json(ctx.message.author.id, u_data)
 
   @commands.command(pass_context=True)
@@ -190,6 +237,7 @@ class LevelUp:
     level = int(user[3])
     s_score = user[1]
     max_exp = calculate_xp_for_lvl(level)
+    prestige = user[4]
 
     new_exp = exp
     new_score = s_score
@@ -239,14 +287,14 @@ class LevelUp:
         await self.bot.say('You feel the dark magic choke you. You do not dare try again for **2 minutes**')
         self.gamble_lock[author_id] = datetime.datetime.now()
     elif result == 'double':
-        new_exp += offer
-        new_score += offer
+        new_exp += offer * (1 + prestige)
+        new_score += offer * (1 + prestige)
         await self.bot.say('You feel the black magic grace you with a gift. You gain back your offering and more.')
     elif result == 'level':
-        gain = int((max_exp - exp) * random.random())
+        gain = int((max_exp - exp) * random.random()) * (1 + prestige)
         await self.bot.say('The black magic courses through you. You gain a portion of your remaining level.')
-        new_exp += gain
-        new_score += gain
+        new_exp += gain 
+        new_score += gain 
     elif result == 'reset_training':
         if offer < max_exp / 4:
             await self.bot.say('You feel slightly refreshed, but the offering was not enough to fully refresh you.\n(Sacrifice at least a fourth of a level to unlock this result)')
@@ -385,7 +433,7 @@ class LevelUp:
                 print('PH')
 
             events.append('\n**Correct Moves:** {}'.format(correct_moves))
-            events.append('**EXP Gained**: {}'.format(level * 10 * correct_moves))
+            events.append('**EXP Gained**: {}'.format(level * 10 * correct_moves * (1 + prestige)))
             new_exp += level * 10 * correct_moves
             new_score += level * 10 * correct_moves
             await self.bot.say('\n'.join(events))
@@ -407,6 +455,7 @@ class LevelUp:
     exp = user[2]
     level = int(user[3])
     s_score = user[1]
+    prestige = user[4]
 
     if level < 5:
         await self.bot.say("You need to be **level 5** to use this!")
@@ -473,7 +522,7 @@ class LevelUp:
             exp_for_winning = 0
             win_perc = round(win_chance * 100, 3) if win_chance < 1 else 100
             if random.random() < win_chance:
-                exp_for_winning = m_level * m_mult * global_multiplier
+                exp_for_winning = m_level * m_mult * global_multiplier * (1 + prestige)
                 exp_gain += exp_for_winning
                 events.append('You *beat* a Lv. **{}** **{}** (EXP: +**{}**) (Chance: **{}%**)'.format(m_level, m_type, exp_for_winning, win_perc))
             else:
@@ -502,8 +551,8 @@ class LevelUp:
     c = conn.cursor()
     user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
 
-    if int(user[3]) < 25:
-        await self.bot.say('You must be level **25** to set custom backgrounds!')
+    if int(user[3]) < 25 and int(user[4]) == 0:
+        await self.bot.say('You must be level **25** or prestige **1** to set custom backgrounds!')
         return
 
     custom_img = './data/levelup/users/levelup_bg_{}.jpg'.format(author_id)
@@ -549,6 +598,7 @@ class LevelUp:
     level = int(user[3])
     s_placing = 1 + c.execute("SELECT (select count(*) from Users as u2 where u2.score > u1.score) FROM Users as u1 WHERE id = {}".format(author_id)).fetchone()[0]
     s_score = user[1]
+    prestige = user[4]
 
     u_data = read_user_json(author_id)
 
@@ -590,14 +640,18 @@ class LevelUp:
     level_label_font = ImageFont.truetype(font, 14)
     level_font = ImageFont.truetype('./data/Roboto-Bold.ttf', 30)
     placing_font = ImageFont.truetype(font, 11)
-    base_color = (60, 60, 70)
+    prestige_font = ImageFont.truetype('./data/Roboto-Bold.ttf', 11)
 
     # Custom colors
     exp_color = tuple(u_data.get('xp', (190, 190, 200)))
     base_color = tuple(u_data.get('text', (60, 60, 70)))
+    if prestige < 1:
+      background_filler = (255, 255, 255)
+    else:
+      background_filler = tuple(u_data.get('background', (255, 255, 255)))
 
     # Background filler
-    draw.rectangle([74,8,292,92], fill=(255, 255, 255, 150))
+    draw.rectangle([74,8,292,92], fill=background_filler + tuple([140]))
 
     # Avatar background filler
     draw.rectangle([27,15,97,85], fill=(0,0,0,50))
@@ -621,17 +675,28 @@ class LevelUp:
     draw.text((110 if level > 9 else 118, 58), str(level), base_color, font=level_font)
     draw.rectangle([154,52,155,86], fill=exp_color)
 
-    draw.text((162, 55), "Overall ranking", base_color, font=placing_font)
-    draw.text((162, 70), "Total score", base_color, font=placing_font)
+    if prestige == 0:
+      draw.text((162, 55), "Overall ranking", base_color, font=placing_font)
+      draw.text((162, 70), "Total score", base_color, font=placing_font)
 
-    draw.text((250, 55), "#{}".format(s_placing), base_color, font=placing_font)
-    draw.text((250, 70), str(s_score), base_color, font=placing_font)
+      draw.text((250, 55), "#{}".format(s_placing), base_color, font=placing_font)
+      draw.text((250, 70), str(s_score), base_color, font=placing_font)
+    else:
+      draw.text((162, 50), "Prestige", base_color, font=prestige_font)
+      draw.text((162, 62.5), "Overall ranking", base_color, font=placing_font)
+      draw.text((162, 75), "Total score", base_color, font=placing_font)
+
+      draw.text((250, 50), "{}".format(prestige), base_color, font=prestige_font)
+      draw.text((250, 62.5), "#{}".format(s_placing), base_color, font=placing_font)
+      draw.text((250, 75), str(s_score), base_color, font=placing_font)
 
     #draw.text((0,0),"Text Test",(255,255,255),font=font)
     img.save('./data/levelup/level-out.jpg')
     emoji = {'1': ':first_place:', '2': ':second_place:', '3': ':third_place:'}.get(str(s_placing), ':newspaper:')
     await self.bot.send_message(ctx.message.channel, "{} | **{}'s Level Card**".format(emoji, username))
     await self.bot.send_file(ctx.message.channel, './data/levelup/level-out.jpg')
+    if level > 25:
+      await self.bot.say('The **Grace of Light** lingers at your shoulder, eager to await your **prestige** (you are eligible to prestige with `?prestige`)')
 
       
 def setup(bot):
