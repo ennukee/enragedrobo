@@ -121,14 +121,12 @@ class LevelUp:
       return
 
     damage_dealt = random.randint(int(10 * level * (1 + 0.1 * prestige)), int(12 * level * (1 + 0.1 * prestige)))
-
-    damage_dealt = 50000
     events.append('You deal **{}** damage to the boss!'.format(damage_dealt))
 
     self.raid['boss']['health'] -= damage_dealt
     contribution = self.raid['contribution'].get(author_id, 0)
     self.raid['contribution'][author_id] = contribution + damage_dealt
-    #self.raid['cooldown'][author_id] = datetime.datetime.now()
+    self.raid['cooldown'][author_id] = datetime.datetime.now()
 
     # Check if boss is now dead
     if self.raid['boss']['health'] < 0:
