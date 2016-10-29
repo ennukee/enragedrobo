@@ -135,8 +135,9 @@ class LevelUp:
             exp = user[2]
             level = int(user[3])
             s_score = user[1]
+            prestige = user[4]
             max_exp = calculate_xp_for_lvl(level)
-            await self.bot.say('<@{}>\nLevel **{}**\nEXP: {}\{}\nScore: {}'.format(u_id, level, exp, max_exp, s_score))
+            await self.bot.say('<@{}>\nLevel **{}** (Prestige {})\nEXP: {}\{}\nScore: {}'.format(u_id, level, prestige, exp, max_exp, s_score))
 
 
 
