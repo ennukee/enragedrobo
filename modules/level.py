@@ -61,8 +61,26 @@ class LevelUp:
     events.append('`grace` - Shows the remaining time on the Grace of Light!')
     events.append('`color <mode> <r> <g> <b>` - Set the color for your `xp` or `text`')
     events.append('`lookup <player>` - Use this command with an @ mention to see that person\'s LevelUP data!')
+    events.append('`boss` - Fight a powerful foe with friends!')
 
     await self.bot.say('\n'.join(events))
+
+  @commands.command(pass_context=True, hidden=True)
+  @checks.is_owner()
+  async def leveldebug(self, ctx, *, code : str):
+      """Evaluates python code"""
+      code = code.strip('` ')
+      python = '```py\n{}\n```'
+      result = None
+      try:
+          result = eval(code)
+      except Exception as e:
+          await bot.say(python.format(type(e).__name__ + ': ' + str(e)))
+          return
+
+      if asyncio.iscoroutine(result):
+          result = await result
+      await bot.say(python.format(result))
 
   @commands.command(pass_context=True)
   async def boss(self, ctx, mode = None):
@@ -117,6 +135,8 @@ class LevelUp:
     time_since_attack = (datetime.datetime.now() - attack_cd).total_seconds() if attack_cd else 100000
     if time_since_attack < self.raid['attack_cooldown']:
       mins_left = int((self.raid['attack_cooldown'] - time_since_attack) / 60)
+      if mins_left == 0:
+        mins_left = self.raid['attack_cooldown'] - time_since_attack
       await self.bot.say('You are too tired to attack yet, try again in {} minutes.'.format(mins_left))
       return
 
