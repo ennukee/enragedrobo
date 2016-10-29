@@ -476,7 +476,7 @@ class LevelUp:
 
         events = ['You begin training...\n']
 
-        exp_gain = level * 12
+        exp_gain = level * 12 * (1 + prestige)
         global_multiplier = 1
         chance_of_occurring = 1.0
         i = 2 if time_since_last > WAIT_TIME*2 else 3
