@@ -70,7 +70,7 @@ class LevelUp:
     events.append('You are worthy of raising your **prestige**.')
     events.append('If you do so, you will lose all the XP needed to go from 1 to 25 ({})'.format(botv.prestige_value))
     events.append('Your overall ranking will also be dropped in this process.')
-    events.append('However, you will permanently earn 100 percent extra experience.\n')
+    events.append('However, you will permanently earn 100 percent extra experience and both `?grace` and `?train` will be reset.\n')
     events.append('You will keep the ability to do `?setbg`, but will have to re-level for anything else.\n')
     events.append('**Are you sure you want to prestige?** (y/n)')
 
@@ -86,6 +86,10 @@ class LevelUp:
       if msg.content.lower() == 'y':
         c.execute('UPDATE Users SET exp = {}, score = {}, level = 1, prestige = {} WHERE id = {}'.format(s_score - botv.prestige_value, s_score - botv.prestige_value, prestige + 1, author_id))
         conn.commit()
+
+        self.gamble_lock[author_id] = None
+        self.last_saved[author_id] = None
+        self.last_trained[author_id] = None
         await self.bot.say('Very well, you are now **Prestige {}**'.format(prestige + 1))
         if prestige + 1 == 1:
           await self.bot.say('**Prestige 1** Perks\nYou can now do `?color background` to set the background color of `?level`')
