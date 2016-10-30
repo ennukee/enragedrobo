@@ -200,7 +200,6 @@ class LevelUp:
     num_correct = sum([attacks[i] == correct_order[i] for i in range(0, self.raid['attack_length'])])
     output_form = [":white_check_mark:" if attacks[i] == correct_order[i] else ":x:" for i in range(0, self.raid['attack_length'])]
     damage_dealt = int((num_correct / 7) * random.randint(int(25 * level * (1 + 0.1 * prestige)), int(45 * level * (1 + 0.1 * prestige))))
-    events.append('Your moves were... {}\nYou deal **{}** damage to the boss!'.format(' '.join(output_form), damage_dealt))
 
     if num_correct >= 7:
       self.raid['boss']['kill_order'][random.randint(0, self.raid['attack_length'])] = random.choice('ADSBEF')
@@ -214,6 +213,8 @@ class LevelUp:
     elif num_correct == 10:
       events.append('You exposed ALL of the boss\' weak points, ***25x*** damage!')
       damage_dealt *= 25
+
+    events.append('Your moves were... {}\nYou deal **{}** damage to the boss!'.format(' '.join(output_form), damage_dealt))
 
     self.raid['boss']['health'] -= damage_dealt
     contribution = self.raid['contribution'].get(author_id, 0)
