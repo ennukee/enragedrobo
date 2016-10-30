@@ -30,7 +30,7 @@ class LevelUp:
     self.last_trained = {}
     self.last_saved = {}
     self.gamble_lock = {}
-    self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 20}
+    self.lock_timers = {'save': 7200, 'gamble': 120, 'pot': 20, 'train': 3600}
     self.pot_active_channels = {}
     self.raid = {
       'boss': 
@@ -56,6 +56,7 @@ class LevelUp:
     """A helper function for all the stuff in the levelup game / module"""
     events = []
     events.append('Welcome to enragedrobo\'s **LevelUP** game!\n')
+    events.append('`summary` - Display a summary of all vital cooldowns')
     events.append('`level` - Display a card containing your LevelUP information!')
     events.append('`train` - Unlocks at level **5**. Gives a boost in XP, can be very high if you are lucky. 1 hour cooldown.')
     events.append('`gamble <amount>` - Gamble a certain amount of XP for a chance at glorious prizes!')
@@ -66,6 +67,71 @@ class LevelUp:
     events.append('`boss <attack>` - Fight a powerful foe with friends!')
 
     await self.bot.say('\n'.join(events))
+
+  @commands.command(pass_context = True)
+  async def summary(self, ctx):
+    author_id = ctx.message.author.id
+    conn = sqlite3.connect('users.db')
+    c = conn.cursor()
+    user = c.execute('SELECT * FROM Users WHERE id = {}'.format(author_id)).fetchone()
+
+    exp = user[2]
+    level = int(user[3])
+    s_score = user[1]
+
+    gamble_remaining, train_remaining, grace_remaining, boss_remaining = 0, 0, 0, 0
+
+    cur_time = datetime.datetime.now()
+    # Gamble timer
+    last = self.gamble_lock.get(author_id, None)
+    if last:
+      since_last = (cur_time - last).total_seconds()
+      if since_last < self.lock_timers['gamble']:
+        gamble_remaining = int(self.lock_timers['gamble'] - since_last)
+    last, since_last = 0, 0
+
+    # Train timer
+    last = self.last_trained.get(author_id, None)
+    if last:
+      since_last = (cur_time - last).total_seconds()
+      if since_last < self.lock_timers['train']:
+        train_remaining = int((self.lock_timers['train'] - since_last)/60)
+    last, since_last = 0, 0
+
+    # Grace timer
+    last = self.last_saved.get(author_id, None)
+    if last:
+      since_last = (cur_time - last).total_seconds()
+      if since_last < self.lock_timers['save']:
+        grace_remaining = int((self.lock_timers['save'] - since_last)/60)
+    last, since_last = 0, 0
+
+    # Boss timer
+    last = self.raid['cooldown'].get(author_id, None)
+    if last:
+      since_last = (cur_time - last).total_seconds()
+      if since_last < self.raid['attack_cooldown']:
+        boss_remaining = int(self.raid['attack_cooldown'] - since_last)
+    last, since_last = 0, 0
+
+    def format_time_remaining(i, label):
+      if i == 0:
+        return "**Up!**"
+      else:
+        return "**{}** {}".format(i, label)
+
+    events = []
+    events.append('<@{}>\n'.format(author_id))
+    events.append('**Level {}** ({} EXP)'.format(level, exp))
+    events.append('Gamble: {}'.format(format_time_remaining(gamble_remaining, 'seconds')))
+    events.append('Boss: {}'.format(format_time_remaining(boss_remaining, 'seconds')))
+    events.append('Train: {}'.format(format_time_remaining(train_remaining, 'minutes')))
+    events.append('Grace: {}'.format(format_time_remaining(grace_remaining, 'minutes')))
+
+    print(events)
+
+    await self.bot.say('\n'.join(events))
+
 
   @commands.command(pass_context=True)
   async def boss(self, ctx, attacks : str):
@@ -87,7 +153,7 @@ class LevelUp:
         # Let's make a new boss
         await self.bot.say('***A powerful new strength appears...***')
         new_name = random.choice(self.raid['boss_names'])
-        health = random.randint(75000, 150000)
+        health = random.randint(50000, 75000)
 
         self.raid['boss']['name'] = new_name
         self.raid['boss']['health'] = health
@@ -136,7 +202,18 @@ class LevelUp:
     damage_dealt = int((num_correct / 7) * random.randint(int(25 * level * (1 + 0.1 * prestige)), int(45 * level * (1 + 0.1 * prestige))))
     events.append('Your moves were... {}\nYou deal **{}** damage to the boss!'.format(' '.join(output_form), damage_dealt))
 
-    self.raid['boss']['kill_order'][random.randint(0, self.raid['attack_length'])] = random.choice('ADSBEF')
+    if num_correct >= 7:
+      self.raid['boss']['kill_order'][random.randint(0, self.raid['attack_length'])] = random.choice('ADSBEF')
+
+    if num_correct == 8:
+      events.append('You exposed most of the boss\' weak points, 5x damage!')
+      damage_dealt *= 5
+    elif num_correct == 9:
+      events.append('You exposed almost all of the boss\' weak points, **10x** damage!')
+      damage_dealt *= 10
+    elif num_correct == 10:
+      events.append('You exposed ALL of the boss\' weak points, ***25x*** damage!')
+      damage_dealt *= 25
 
     self.raid['boss']['health'] -= damage_dealt
     contribution = self.raid['contribution'].get(author_id, 0)
@@ -153,7 +230,7 @@ class LevelUp:
         if v > h_contr:
           h_user = k
           h_contr = v
-        perc_contr = int(v / self.raid['boss']['maxhealth'] * 1000) / 100
+        perc_contr = int(v / self.raid['boss']['maxhealth'] * 10000) / 100
         events.append('**<@{}> did {} damage** ({}%)'.format(k, v, perc_contr))
 
       events.append('For doing the most damage, <@{}> gets a `?train` and `?grace` reset.\n'.format(h_user))
