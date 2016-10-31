@@ -204,6 +204,9 @@ class LevelUp:
     if num_correct >= 7:
       self.raid['boss']['kill_order'][random.randint(0, self.raid['attack_length'])] = random.choice('ADSBEF')
 
+    if num_correct == 7:
+      events.append('You found a weak point in the boss! 2x damage!')
+      damage_dealt *= 2
     if num_correct == 8:
       events.append('You exposed most of the boss\' weak points, 5x damage!')
       damage_dealt *= 5
@@ -242,18 +245,33 @@ class LevelUp:
       events.append('**NOTE**: Prestige has reduced bonuses from raids.')
 
       for k, v in self.raid['contribution'].items():
+        how_much = None
         if v > self.raid['boss']['maxhealth'] / 20:
           user = c.execute('SELECT * FROM Users WHERE id = {}'.format(k)).fetchone()
           exp = user[2]
           s_score = user[1]
           prestige = user[4]
 
+          how_much = 5
+
           exp_gain = self.raid['five_percent_bonus'] * (1 + prestige * 0.1)
           if v > self.raid['boss']['maxhealth'] / 5:
+            how_much = 20
             exp_gain += self.raid['twenty_percent_bonus'] * (1 + prestige * 0.1)
 
           c.execute('UPDATE Users SET exp = {}, score = {} WHERE ID = {}'.format(exp + exp_gain, s_score + exp_gain, k))
           conn.commit()
+
+        if how_much:
+          u_data = read_user_json(k)
+          if u_data.get('valid', False):
+            if how_much >= 5:
+              u_data['five_percent_medal'] = True
+            if how_much >= 20:
+              u_data['twenty_percent_medal'] = True
+
+          write_user_json(k, u_data)
+
 
     await self.bot.say('\n'.join(events))
 
@@ -269,15 +287,31 @@ class LevelUp:
     level = int(user[3])
     s_score = user[1]
     prestige = user[4]
-    
-    if level < 25:
-      await self.bot.say('The **Grace of Light** speaks to you...\n"You are not yet ready, come back when you reach level **25**"')
+
+    u_data = read_user_json(author_id)
+    required_level = (1 + prestige // 5) * 25
+    exp_consumed = sum([calculate_xp_for_lvl(i) for i in range(1, required_level)])
+
+    if level < required_level:
+      await self.bot.say('The **Grace of Light** speaks to you...\n"You are not yet ready, come back when you reach level **{}**"'.format(required_level))
       return
+
+    # Check for medals
+    if prestige >= 10:
+      required_medal = u_data.get('twenty_percent_medal', None)
+      if not required_medal:
+        await self.bot.say('"Your power is massive, but lack the accolades to show for it..."\n*(Required: Contribute twenty percent damage to a boss kill)*')
+        return
+    elif prestige >= 5:
+      required_medal = u_data.get('five_percent_medal', None)
+      if not required_medal:
+        await self.bot.say('"You hold a great power, but you must use it well to move onward."\n*(Required: Contribute five percent damage to a boss kill)*')
+        return
 
     events = []
     events.append('The **Grace of Light** speaks to you...\n')
     events.append('You are worthy of raising your **prestige**.')
-    events.append('If you do so, you will lose all the XP needed to go from 1 to 25 ({})'.format(botv.prestige_value))
+    events.append('If you do so, you will lose all the XP needed to go from 1 to {} ({})'.format(required_level, exp_consumed))
     events.append('Your overall ranking will also be dropped in this process.')
     events.append('However, you will permanently earn 100 percent extra experience and both `?grace` and `?train` will be reset.\n')
     events.append('You will keep the ability to do `?setbg`, but will have to re-level for anything else.\n')
@@ -293,13 +327,20 @@ class LevelUp:
       await self.bot.say('Come again another time, then. (Time ran out!)')
     else:
       if msg.content.lower() == 'y':
-        c.execute('UPDATE Users SET exp = {}, score = {}, level = 1, prestige = {} WHERE id = {}'.format(s_score - botv.prestige_value, s_score - botv.prestige_value, prestige + 1, author_id))
+        c.execute('UPDATE Users SET exp = {}, score = {}, level = 1, prestige = {} WHERE id = {}'.format(s_score - exp_consumed, s_score - exp_consumed, prestige + 1, author_id))
         conn.commit()
 
         self.gamble_lock[author_id] = None
         self.last_saved[author_id] = None
         self.last_trained[author_id] = None
         await self.bot.say('Very well, you are now **Prestige {}**'.format(prestige + 1))
+        if required_level == 50:
+          u_data['five_percent_medal'] = None
+          write_user_json(author_id, u_data)
+        elif required_level >= 75:
+          u_data['twenty_percent_medal'] = None
+          write_user_json(author_id, u_data)
+
         if prestige + 1 == 1:
           await self.bot.say('**Prestige 1** Perks\nYou can now do `?color background` to set the background color of `?level`')
       else:
@@ -912,9 +953,23 @@ class LevelUp:
     emoji = {'1': ':first_place:', '2': ':second_place:', '3': ':third_place:'}.get(str(s_placing), ':newspaper:')
     await self.bot.send_message(ctx.message.channel, "{} | **{}'s Level Card**".format(emoji, username))
     await self.bot.send_file(ctx.message.channel, './data/levelup/level-out.jpg')
-    if level >= 25:
-      await self.bot.say('The **Grace of Light** lingers at your shoulder, eager to await your **prestige** (you are eligible to prestige with `?prestige`)')
 
+    u_data = read_user_json(author_id)
+    required_level = (1 + prestige // 5) * 25
+
+    if level >= required_level:
+      if required_level == 25:
+        await self.bot.say('The **Grace of Light** lingers at your shoulder, eager to await your **prestige** (you are eligible to prestige with `?prestige`)')
+      if required_level == 50:
+        if not u_data.get('five_percent_medal', None):
+          await self.bot.say('The **Grace of Light** acknowledges your power, but wishes to see you in combat...')
+        else:
+          await self.bot.say('The **Grace of Light** lingers at your shoulder, eager to await your **prestige** (you are eligible to prestige with `?prestige`)')
+      if required_level >= 75:
+        if not u_data.get('twenty_percent_medal', None):
+          await self.bot.say('The **Grace of Light** wishes to bless you, but you lack the dedication to battle...')
+        else:
+          await self.bot.say('The **Grace of Light** lingers at your shoulder, eager to await your **prestige** (you are eligible to prestige with `?prestige`)')
       
 def setup(bot):
   bot.add_cog(LevelUp(bot))
