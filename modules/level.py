@@ -114,6 +114,15 @@ class LevelUp:
         boss_remaining = int(self.raid['attack_cooldown'] - since_last)
     last, since_last = 0, 0
 
+    # Boss respawn
+    boss_dead_remaining = None
+    last = self.raid.get('died_at', None):
+    if last:
+      since_last = (cur_time - last).total_seconds()
+      if since_last < self.raid['respawn_timer']:
+        boss_dead_remaining = int(self.raid['attack_cooldown'] - since_last)
+    last, since_last = 0, 0
+
     def format_time_remaining(i, label):
       if i == 0:
         return "**Up!**"
@@ -124,7 +133,10 @@ class LevelUp:
     events.append('<@{}>\n'.format(author_id))
     events.append('**Level {}** ({} EXP)'.format(level, exp))
     events.append('Gamble: {}'.format(format_time_remaining(gamble_remaining, 'seconds')))
-    events.append('Boss: {}'.format(format_time_remaining(boss_remaining, 'seconds')))
+    if boss_dead_remaining:
+      events.append('Boss: {}'.format(format_time_remaining(boss_dead_remaining, 'minutes')))
+    else:
+      events.append('Boss: {}'.format(format_time_remaining(boss_remaining, 'seconds')))
     events.append('Train: {}'.format(format_time_remaining(train_remaining, 'minutes')))
     events.append('Grace: {}'.format(format_time_remaining(grace_remaining, 'minutes')))
 
