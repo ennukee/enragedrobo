@@ -116,7 +116,7 @@ class LevelUp:
 
     # Boss respawn
     boss_dead_remaining = None
-    last = self.raid.get('died_at', None):
+    last = self.raid.get('died_at', None)
     if last:
       since_last = (cur_time - last).total_seconds()
       if since_last < self.raid['respawn_timer']:
