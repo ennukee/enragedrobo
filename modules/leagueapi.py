@@ -39,6 +39,7 @@ class LeagueAPI:
       c_data = player_champion_data(data['id'])
     except ValueError as e:
       await self.bot.say(str(e))
+      raise e
       return
 
     def int_to_date(i):
